@@ -80,3 +80,29 @@ typedef struct _KLDR_DATA_TABLE_ENTRY {
 	PVOID LoadedImports;
 	PVOID PatchInformation;
 } KLDR_DATA_TABLE_ENTRY, *PKLDR_DATA_TABLE_ENTRY;
+
+typedef struct _MM_AVL_NODE // Size=24
+{
+	struct _MM_AVL_NODE * LeftChild; // Size=8 Offset=0
+	struct _MM_AVL_NODE * RightChild; // Size=8 Offset=8
+
+	union // Size=8
+	{
+		struct
+		{
+			INT Red : 1; // Size=8 Offset=0 BitOffset=0 BitCount=1
+		} s1;
+		struct
+		{
+			INT Balance : 2; // Size=8 Offset=0 BitOffset=0 BitCount=2
+		} s2;
+		struct _MM_AVL_NODE * Parent; // Size=8 Offset=0
+	} u1;
+} MM_AVL_NODE, *PMM_AVL_NODE, *PMMADDRESS_NODE;
+
+typedef struct _RTL_AVL_TREE // Size=8
+{
+	PMM_AVL_NODE BalancedRoot;
+	void * NodeHint;
+	UINT64 NumberGenericTableElements;
+} RTL_AVL_TREE, *PRTL_AVL_TREE, MM_AVL_TABLE, *PMM_AVL_TABLE;

@@ -587,6 +587,16 @@ NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
 			if (!NT_SUCCESS(status)) {
 				KDBG("ObOpenObjectByPointer failed with 0x%X\n", status);
 			}
+			else {
+				PEPROCESS pep = *lastPEP;
+				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + 0x628);
+				KDBG("VAD-ROOT.....: 0x%p\n", avltable->BalancedRoot);
+				KDBG("NODE-HINT....: 0x%p\n", avltable->NodeHint);
+				KDBG("NMBR-OF-ELEMs: %d\n", avltable->NumberGenericTableElements);
+				KDBG("FLAGS........: 0x%p\n", *((UINT32 *)pep + 0x304));
+				KDBG("VSIZE........: %d\n", *((UINT64 *)pep + 0x338));
+				KDBG("IMAGEFILENAME: %.*s\n", 15, ((const char *)pep + 0x450));
+			}
 		}
 	}
 	return status;
