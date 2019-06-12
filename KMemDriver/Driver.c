@@ -589,8 +589,8 @@ NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
 			}
 			else {
 				PEPROCESS pep = *lastPEP;
-				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + 0x628);
-				KDBG("VAD-ROOT.....: 0x%p\n", avltable->BalancedRoot);
+				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
+				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
 				KDBG("NODE-HINT....: 0x%p\n", avltable->NodeHint);
 				KDBG("NMBR-OF-ELEMs: %d\n", avltable->NumberGenericTableElements);
 				KDBG("FLAGS........: 0x%p\n", *((UINT32 *)pep + 0x304));
