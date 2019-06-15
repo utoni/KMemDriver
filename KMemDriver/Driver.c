@@ -44,39 +44,67 @@ void OnImageLoad(
 NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess);
 NTSTATUS VerifyControlProcess(IN PEPROCESS pEProcess);
 NTSTATUS InitSharedMemory(IN PEPROCESS pEProcess);
-NTSTATUS WaitForHandshake(IN PEPROCESS pEProcess,
-	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent);
-NTSTATUS OpenEventReference(IN PEPROCESS pEProcess,
+NTSTATUS WaitForHandshake(
+	IN PEPROCESS pEProcess,
+	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent
+);
+NTSTATUS OpenEventReference(
+	IN PEPROCESS pEProcess,
 	IN KAPC_STATE *pKAPCState, IN HANDLE hEvent,
-	OUT PKEVENT *pPKEvent);
-NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
+	OUT PKEVENT *pPKEvent
+);
+NTSTATUS UpdatePPEPIfRequired(
+	IN HANDLE wantedPID,
 	IN HANDLE lastPID, OUT HANDLE *lastPROC,
-	OUT PEPROCESS *lastPEP);
-NTSTATUS GetPages(IN PEPROCESS Process,
+	OUT PEPROCESS *lastPEP
+);
+NTSTATUS GetPages(
+	IN PEPROCESS Process,
 	OUT MEMORY_BASIC_INFORMATION *mbiArr,
 	IN SIZE_T mbiArrLen, OUT SIZE_T *mbiUsed,
-	IN PVOID start_addr);
-NTSTATUS GetModules(IN PEPROCESS pEProcess,
+	IN PVOID start_addr
+);
+NTSTATUS GetModules(
+	IN PEPROCESS pEProcess,
 	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
-	IN SIZE_T start_index);
-NTSTATUS KeReadVirtualMemory(IN PEPROCESS pEProcess,
+	IN SIZE_T start_index
+);
+NTSTATUS KeReadVirtualMemory(
+	IN PEPROCESS pEProcess,
 	IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size);
-NTSTATUS KeWriteVirtualMemory(IN PEPROCESS pEProcess,
+	IN PVOID TargetAddress, IN PSIZE_T Size
+);
+NTSTATUS KeWriteVirtualMemory(
+	IN PEPROCESS pEProcess,
 	IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size);
-NTSTATUS KeProtectVirtualMemory(IN HANDLE hProcess,
+	IN PVOID TargetAddress,
+	IN PSIZE_T Size
+);
+NTSTATUS KeProtectVirtualMemory(
+	IN HANDLE hProcess,
 	IN PVOID addr, IN SIZE_T siz,
-	IN ULONG new_prot, OUT ULONG *old_prot);
-NTSTATUS KeRestoreProtectVirtualMemory(IN HANDLE hProcess,
+	IN ULONG new_prot, OUT ULONG *old_prot
+);
+NTSTATUS KeRestoreProtectVirtualMemory(
+	IN HANDLE hProcess,
 	IN PVOID addr, IN SIZE_T siz,
-	IN ULONG old_prot);
-NTSTATUS GetDriverObject(PDRIVER_OBJECT *lpObj, WCHAR* DriverDirName);
+	IN ULONG old_prot
+);
+NTSTATUS GetDriverObject(
+	IN OUT PDRIVER_OBJECT *lpObj,
+	IN WCHAR* DriverDirName
+);
 NTSTATUS KRThread(IN PVOID pArg);
-TABLE_SEARCH_RESULT MiFindNodeOrParent(
+TABLE_SEARCH_RESULT VADFindNodeOrParent(
 	IN PMM_AVL_TABLE Table,
 	IN ULONG_PTR StartingVpn,
-	OUT PMMADDRESS_NODE *NodeOrParent);
+	OUT PMMADDRESS_NODE *NodeOrParent
+);
+NTSTATUS VADFind(
+	IN PEPROCESS pProcess,
+	IN ULONG_PTR address,
+	OUT PMMVAD_SHORT* pResult
+);
 
 #pragma alloc_text(PAGE, WaitForControlProcess)
 #pragma alloc_text(PAGE, VerifyControlProcess)
@@ -92,7 +120,8 @@ TABLE_SEARCH_RESULT MiFindNodeOrParent(
 #pragma alloc_text(PAGE, KeRestoreProtectVirtualMemory)
 #pragma alloc_text(PAGE, GetDriverObject)
 #pragma alloc_text(PAGE, KRThread)
-#pragma alloc_text(PAGE, MiFindNodeOrParent)
+#pragma alloc_text(PAGE, VADFindNodeOrParent)
+#pragma alloc_text(PAGE, VADFind)
 
 static void fn_zero_text(PVOID fn_start);
 static HANDLE ctrlPID;
@@ -235,8 +264,10 @@ NTSTATUS InitSharedMemory(IN PEPROCESS pEProcess)
 	return status;
 }
 
-NTSTATUS WaitForHandshake(IN PEPROCESS pEProcess,
-	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent)
+NTSTATUS WaitForHandshake(
+	IN PEPROCESS pEProcess,
+	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent
+)
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
 	SIZE_T maxWaits = 20;
@@ -267,9 +298,11 @@ NTSTATUS WaitForHandshake(IN PEPROCESS pEProcess,
 	return status;
 }
 
-NTSTATUS OpenEventReference(IN PEPROCESS pEProcess,
+NTSTATUS OpenEventReference(
+	IN PEPROCESS pEProcess,
 	IN KAPC_STATE *pKAPCState, IN HANDLE hEvent,
-	OUT PKEVENT *pPKEvent)
+	OUT PKEVENT *pPKEvent
+)
 {
 	NTSTATUS status;
 
@@ -567,9 +600,11 @@ NTSTATUS KRThread(IN PVOID pArg)
 	return status;
 }
 
-NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
+NTSTATUS UpdatePPEPIfRequired(
+	IN HANDLE wantedPID,
 	IN HANDLE lastPID, OUT HANDLE *lastPROC,
-	OUT PEPROCESS *lastPEP)
+	OUT PEPROCESS *lastPEP
+)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 
@@ -594,6 +629,9 @@ NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
 			}
 			else {
 				PEPROCESS pep = *lastPEP;
+				PMMVAD_SHORT mmvad;
+				KDBG("VAD Test: 0x%p\n", VADFind(pep, 0x5086800, &mmvad));
+#if 0
 				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
 				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
 				KDBG("NODE-HINT....: 0x%p\n", avltable->NodeHint);
@@ -601,16 +639,19 @@ NTSTATUS UpdatePPEPIfRequired(IN HANDLE wantedPID,
 				KDBG("FLAGS........: 0x%p\n", *((UINT32 *)pep + 0x304));
 				KDBG("VSIZE........: %d\n", *((UINT64 *)pep + 0x338));
 				KDBG("IMAGEFILENAME: %.*s\n", 15, ((const char *)pep + 0x450));
+#endif
 			}
 		}
 	}
 	return status;
 }
 
-NTSTATUS GetPages(IN PEPROCESS Process,
+NTSTATUS GetPages(
+	IN PEPROCESS Process,
 	OUT MEMORY_BASIC_INFORMATION *mbiArr,
 	IN SIZE_T mbiArrLen, OUT SIZE_T *mbiUsed,
-	IN PVOID start_addr)
+	IN PVOID start_addr
+)
 {
 	NTSTATUS status;
 	HANDLE procHandle;
@@ -642,7 +683,7 @@ NTSTATUS GetPages(IN PEPROCESS Process,
 		}
 		else {
 			for (i = 0; i < mbiLength; ++i)
-				KDBG("Page #%03u: base -> %p, prot -> 0x%02X, size -> 0x%X\n",
+				KDBG("Page #%03u: base -> 0x%p, prot -> 0x%02X, size -> 0x%X\n",
 				(*mbiUsed) + i, (*(mbiArr + i)).BaseAddress, (*(mbiArr + i)).Protect,
 					(*(mbiArr + i)).RegionSize);
 		}
@@ -655,9 +696,11 @@ NTSTATUS GetPages(IN PEPROCESS Process,
 	return status;
 }
 
-NTSTATUS GetModules(IN PEPROCESS Process,
+NTSTATUS GetModules(
+	IN PEPROCESS Process,
 	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
-	IN SIZE_T start_index)
+	IN SIZE_T start_index
+)
 {
 	SIZE_T used = 0, index = 0;
 	INT waitCount = 0;
@@ -712,9 +755,10 @@ NTSTATUS GetModules(IN PEPROCESS Process,
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS KeReadVirtualMemory(IN PEPROCESS Process,
-	IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size)
+NTSTATUS KeReadVirtualMemory(
+	IN PEPROCESS Process, IN PVOID SourceAddress,
+	IN PVOID TargetAddress, IN PSIZE_T Size
+)
 {
 	NTSTATUS status;
 	SIZE_T Bytes = 0;
@@ -731,9 +775,10 @@ NTSTATUS KeReadVirtualMemory(IN PEPROCESS Process,
 	}
 }
 
-NTSTATUS KeWriteVirtualMemory(IN PEPROCESS Process,
-	IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size)
+NTSTATUS KeWriteVirtualMemory(
+	IN PEPROCESS Process, IN PVOID SourceAddress,
+	IN PVOID TargetAddress, IN PSIZE_T Size
+)
 {
 	NTSTATUS status;
 	SIZE_T Bytes = 0;
@@ -750,9 +795,11 @@ NTSTATUS KeWriteVirtualMemory(IN PEPROCESS Process,
 	}
 }
 
-NTSTATUS KeProtectVirtualMemory(IN HANDLE hProcess,
-	IN PVOID addr, IN SIZE_T siz, IN ULONG new_prot,
-	OUT ULONG *old_prot)
+NTSTATUS KeProtectVirtualMemory(
+	IN HANDLE hProcess, IN PVOID addr,
+	IN SIZE_T siz, IN ULONG new_prot,
+	OUT ULONG *old_prot
+)
 {
 	NTSTATUS status;
 	PVOID prot_addr = addr;
@@ -796,7 +843,10 @@ static void fn_zero_text(PVOID fn_start)
 	}
 }
 
-NTSTATUS GetDriverObject(PDRIVER_OBJECT *lpObj, WCHAR* DriverDirName)
+NTSTATUS GetDriverObject(
+	IN OUT PDRIVER_OBJECT *lpObj,
+	IN WCHAR* DriverDirName
+)
 {
 	NTSTATUS status = STATUS_SUCCESS;
 	PDRIVER_OBJECT pBeepObj = NULL;
@@ -820,44 +870,11 @@ NTSTATUS GetDriverObject(PDRIVER_OBJECT *lpObj, WCHAR* DriverDirName)
 }
 
 TABLE_SEARCH_RESULT
-MiFindNodeOrParent(
+VADFindNodeOrParent(
 	IN PMM_AVL_TABLE Table,
 	IN ULONG_PTR StartingVpn,
 	OUT PMMADDRESS_NODE *NodeOrParent
 )
-
-/*++
-	Routine Description:
-		This routine is used by all of the routines of the generic
-		table package to locate the a node in the tree.  It will
-		find and return (via the NodeOrParent parameter) the node
-		with the given key, or if that node is not in the tree it
-		will return (via the NodeOrParent parameter) a pointer to
-		the parent.
-	Arguments:
-		Table - The generic table to search for the key.
-		StartingVpn - The starting virtual page number.
-		NodeOrParent - Will be set to point to the node containing the
-		the key or what should be the parent of the node
-		if it were in the tree.  Note that this will *NOT*
-		be set if the search result is TableEmptyTree.
-	Return Value:
-		TABLE_SEARCH_RESULT - TableEmptyTree: The tree was empty.  NodeOrParent
-		is *not* altered.
-		TableFoundNode: A node with the key is in the tree.
-		NodeOrParent points to that node.
-		TableInsertAsLeft: Node with key was not found.
-		NodeOrParent points to what would
-		be parent.  The node would be the
-		left child.
-		TableInsertAsRight: Node with key was not found.
-		NodeOrParent points to what would
-		be parent.  The node would be
-		the right child.
-	Environment:
-		Kernel mode.  The PFN lock is held for some of the tables.
---*/
-
 {
 	PMMADDRESS_NODE Child;
 	PMMADDRESS_NODE NodeToExamine;
@@ -877,10 +894,10 @@ MiFindNodeOrParent(
 		startVpn = VpnCompare->StartingVpn;
 		endVpn = VpnCompare->EndingVpn;
 
-#if defined( _WIN81_ ) || defined( _WIN10_ )
 		startVpn |= (ULONG_PTR)VpnCompare->StartingVpnHigh << 32;
 		endVpn |= (ULONG_PTR)VpnCompare->EndingVpnHigh << 32;
-#endif  
+
+		KDBG("Examining Node 0x%p with start VA 0x%p and end VA 0x%p\n", VpnCompare, startVpn, endVpn);
 
 		//
 		// Compare the buffer with the key in the tree element.
@@ -933,6 +950,33 @@ MiFindNodeOrParent(
 				return TableInsertAsRight;
 			}
 		}
+	}
+}
 
-	};
+NTSTATUS VADFind(
+	IN PEPROCESS pProcess,
+	IN ULONG_PTR address,
+	OUT PMMVAD_SHORT* pResult
+)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	ULONG_PTR vpnStart = address >> PAGE_SHIFT;
+	PMM_AVL_TABLE pTable = (PMM_AVL_TABLE)((PUCHAR)pProcess + VAD_TREE_1803);
+	PMM_AVL_NODE pNode = GET_VAD_ROOT(pTable);
+
+	if (pProcess == NULL || pResult == NULL)
+		return STATUS_INVALID_PARAMETER;
+
+	// Search VAD
+	if (VADFindNodeOrParent(pTable, vpnStart, &pNode) == TableFoundNode)
+	{
+		*pResult = (PMMVAD_SHORT)pNode;
+	}
+	else
+	{
+		KDBG("%s: VAD entry for address 0x%p not found\n", __FUNCTION__, address);
+		status = STATUS_NOT_FOUND;
+	}
+
+	return status;
 }
