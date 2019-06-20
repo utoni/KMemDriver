@@ -110,3 +110,19 @@ ObReferenceObjectByName(
 	PVOID ParseContext,
 	PVOID* ObjectPtr
 );
+
+NTSTATUS ZwAllocateVirtualMemory(
+	_In_    HANDLE    ProcessHandle,
+	_Inout_ PVOID     *BaseAddress,
+	_In_    ULONG_PTR ZeroBits,
+	_Inout_ PSIZE_T   RegionSize,
+	_In_    ULONG     AllocationType,
+	_In_    ULONG     Protect
+);
+
+NTSTATUS ZwFreeVirtualMemory(
+	_In_    HANDLE  ProcessHandle,
+	_Inout_ PVOID   *BaseAddress,
+	_Inout_ PSIZE_T RegionSize,
+	_In_    ULONG   FreeType
+);

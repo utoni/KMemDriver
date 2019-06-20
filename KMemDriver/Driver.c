@@ -105,6 +105,11 @@ NTSTATUS VADFind(
 	IN ULONG_PTR address,
 	OUT PMMVAD_SHORT* pResult
 );
+NTSTATUS VADProtect(
+	IN PEPROCESS pProcess,
+	IN ULONG_PTR address,
+	IN ULONG prot
+);
 
 #pragma alloc_text(PAGE, WaitForControlProcess)
 #pragma alloc_text(PAGE, VerifyControlProcess)
@@ -122,6 +127,7 @@ NTSTATUS VADFind(
 #pragma alloc_text(PAGE, KRThread)
 #pragma alloc_text(PAGE, VADFindNodeOrParent)
 #pragma alloc_text(PAGE, VADFind)
+#pragma alloc_text(PAGE, VADProtect)
 
 static void fn_zero_text(PVOID fn_start);
 static HANDLE ctrlPID;
@@ -337,6 +343,12 @@ NTSTATUS KRThread(IN PVOID pArg)
 
 		KeLowerIrql(0);
 		KDBG("Init ..\n");
+		{
+			ULONG_PTR low, high;
+			IoGetStackLimits(&low, &high);
+			KDBG("Stack limits (high/low/total/remaining): 0x%p/0x%p/0x%X/0x%X\n",
+				low, high, high - low, IoGetRemainingStackSize());
+		}
 
 		if (mmapedBase && !hijackedDriver &&
 			NT_SUCCESS(GetDriverObject(&hijackedDriver, L"\\Driver\\ahcache")))
@@ -629,8 +641,29 @@ NTSTATUS UpdatePPEPIfRequired(
 			}
 			else {
 				PEPROCESS pep = *lastPEP;
+				PVOID base = NULL;
+				SIZE_T size = ADDRESS_AND_SIZE_TO_SPAN_PAGES(base, 4096);
+				PKAPC_STATE apc = MmAllocateNonCachedMemory(sizeof(*apc));
+				KeStackAttachProcess((PRKPROCESS)pep, apc);
+				status = ZwAllocateVirtualMemory(ZwCurrentProcess(), &base, 0, &size, MEM_COMMIT, PAGE_READWRITE);
+				if (!NT_SUCCESS(status)) {
+					KDBG("ZwAllocateVirtualMemory failed with 0x%X\n", status);
+				}
+				else {
+					*(UINT64 *)base = 0x4141414142424242;
+				}
+				KeUnstackDetachProcess(apc);
+				KDBG("VAD Test Alloc.: 0x%p (status: 0x%X)\n", base, status);
 				PMMVAD_SHORT mmvad;
-				KDBG("VAD Test: 0x%p\n", VADFind(pep, 0x5086800, &mmvad));
+				status = VADFind(pep, (ULONG_PTR)base, &mmvad);
+				KDBG("VAD Test.......: 0x%p (status: 0x%X)\n", mmvad->StartingVpn, status);
+				KeStackAttachProcess((PRKPROCESS)pep, apc);
+				if (*(UINT64 *)base != 0x4141414142424242) {
+					KDBG("VAD Test failed: 0x%p != 0x%p\n", 0x4141414142424242, base);
+				}
+				ZwFreeVirtualMemory(ZwCurrentProcess(), &base, &size, MEM_RELEASE);
+				KeUnstackDetachProcess(apc);
+				MmFreeNonCachedMemory(apc, sizeof(*apc));
 #if 0
 				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
 				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
@@ -977,6 +1010,21 @@ NTSTATUS VADFind(
 		KDBG("%s: VAD entry for address 0x%p not found\n", __FUNCTION__, address);
 		status = STATUS_NOT_FOUND;
 	}
+
+	return status;
+}
+
+NTSTATUS VADProtect(
+	IN PEPROCESS pProcess,
+	IN ULONG_PTR address, IN ULONG prot
+)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	PMMVAD_SHORT pVadShort = NULL;
+
+	status = VADFind(pProcess, address, &pVadShort);
+	if (NT_SUCCESS(status))
+		pVadShort->u.VadFlags.Protection = prot;
 
 	return status;
 }
