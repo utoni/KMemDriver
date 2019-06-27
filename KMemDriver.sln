@@ -9,6 +9,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KTest", "KTest\KTest.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemDriverLib", "MemDriverLib\MemDriverLib.vcxproj", "{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemDriverWeb", "MemDriverWeb\MemDriverWeb.vcxproj", "{D36A5026-3729-4CC0-BD26-37177ACE3590}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB} = {B6790A97-6995-46B6-AD73-AC5BC4AC76DB}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -45,6 +50,14 @@ Global
 		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x64.Build.0 = Release|x64
 		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x86.ActiveCfg = Release|Win32
 		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x86.Build.0 = Release|Win32
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Debug|x64.ActiveCfg = Debug|x64
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Debug|x64.Build.0 = Debug|x64
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Debug|x86.ActiveCfg = Debug|Win32
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Debug|x86.Build.0 = Debug|Win32
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Release|x64.ActiveCfg = Release|x64
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Release|x64.Build.0 = Release|x64
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Release|x86.ActiveCfg = Release|Win32
+		{D36A5026-3729-4CC0-BD26-37177ACE3590}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
