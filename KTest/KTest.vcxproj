@@ -174,7 +174,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\Driver.h" />
-    <ClInclude Include="KInterface.h" />
+    <ClInclude Include="..\include\KInterface.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

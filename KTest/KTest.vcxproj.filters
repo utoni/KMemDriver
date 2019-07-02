@@ -18,10 +18,10 @@
     <ClInclude Include="pch.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="KInterface.h">
+    <ClInclude Include="..\include\Driver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Driver.h">
+    <ClInclude Include="..\include\KInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -5,7 +5,7 @@
 #include <ntddk.h>
 #include <Ntstrsafe.h>
 
-#define CHEAT_EXE L"KTest.exe"
+#define CHEAT_EXE L"kmem"
 
 #ifdef _DEBUG_
 #define KDBG(fmt, ...) DbgPrint("KMemDriver[%01d]: " fmt, KeGetCurrentIrql(), __VA_ARGS__)

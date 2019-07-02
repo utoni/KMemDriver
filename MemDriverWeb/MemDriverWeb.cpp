@@ -1,21 +1,40 @@
-// MemDriverWeb.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
-
 #include "pch.h"
 #include <iostream>
+#include <sstream>
+#include "www.h"
+
+using httplib::Request;
+using httplib::Response;
+
+static const char *host = "127.0.0.1";
+static const int port = 8080;
+static const std::string header = DEFAULT_HEADER;
+static const std::string footer = DEFAULT_FOOTER;
+
+static void page_root(const Request &req, Response &res)
+{
+	std::stringstream ss;
+
+	ss << header << footer;
+	res.set_content(ss.str(), "text/html");
+}
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	httplib::Server httpServer;
+
+    std::cout << "Starting WebServer on " << host << ":" << port << "\n"; 
+	httpServer.Get("/", page_root);
+
+	httpServer.set_error_handler([](const Request & req, Response &res) {
+		std::cerr << "ERROR " << res.status << ": " << req.method << " " << req.path << std::endl;
+		std::stringstream ss;
+		ss << "<p>Error Status: <span style='color:red;'>" << res.status << "</span></p>";
+		res.set_content(ss.str(), "text/html");
+	});
+	httpServer.set_logger([](const Request &req, const Response &res) {
+		if (res.status == 200)
+			std::cout << req.method << " " << req.path << std::endl;
+	});
+	httpServer.listen(host, port);
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
