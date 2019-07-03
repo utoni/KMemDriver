@@ -9,20 +9,27 @@ using httplib::Response;
 
 static const char *host = "127.0.0.1";
 static const int port = 8080;
-static const std::string header = DEFAULT_HEADER;
-static const std::string footer = DEFAULT_FOOTER;
+static const std::string template_content = DEFAULT_TEMPLATE;
 
 static void page_root(const Request &req, Response &res)
 {
 	TemplateString ss;
 
-	ss << header << footer;
-	res.set_content(ss.str(), "text/html");
+	ss << template_content;
+	res.set_content(ss.doTemplateStr(), "text/html");
+}
+
+static std::string& template_test_cb(std::string &out)
+{
+	out.append("--- TEST ---");
+	return out;
 }
 
 int main()
 {
 	httplib::Server httpServer;
+
+	TemplateString::registerTemplateCallback("<% CONTENT %>", template_test_cb);
 
     std::cout << "Starting WebServer on " << host << ":" << port << "\n"; 
 	httpServer.Get("/", page_root);

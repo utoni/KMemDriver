@@ -1,17 +1,18 @@
 #pragma once
 
+#include <map>
 #include <sstream>
+
+typedef std::function<std::string&(std::string&)> template_cb;
 
 class TemplateString : public std::stringstream
 {
 public:
-	std::string& doTemplateStr(const std::string& search, const std::string& replace) {
-		size_t pos = 0;
-		std::string s = this->str();
-		while ((pos = s.find(search, pos)) != std::string::npos) {
-			s.replace(pos, search.length(), replace);
-			pos += replace.length();
-		}
-		return s;
+	static void registerTemplateCallback(const char *variable, template_cb cb) {
+		TemplateString::template_callbacks[std::string(variable)] = cb;
 	}
+	std::string doTemplateStr();
+private:
+	std::string in_cache, out_cache;
+	static std::map<std::string, template_cb> template_callbacks;
 };

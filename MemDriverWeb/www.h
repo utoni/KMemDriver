@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEFAULT_HEADER \
+#define DEFAULT_TEMPLATE \
 "<!DOCTYPE html>\n<html lang = \"en\">\n<head>\n" \
 "<title>Bootstrap Example</title>\n" \
 "<meta charset = \"utf-8\"><meta name = \"viewport\" content = \"width=device-width, initial-scale=1\">\n" \
@@ -17,7 +17,6 @@
 "</li>\n<li class = \"nav-item\">\n" \
 "<a class = \"nav-link\" href = \"#\">Link 3 </a>\n" \
 "</li>\n</ul>\n</nav>\n<br>\n\n" \
-"<div class = \"container-fluid\">\n\n";
-
-#define DEFAULT_FOOTER \
+"<div class = \"container-fluid\">\n\n" \
+"<% CONTENT %>\n\n" \
 "</div>\n\n</body>\n</html>\n\n";
