@@ -2,6 +2,7 @@
 #include <iostream>
 #include <sstream>
 #include "www.h"
+#include "minitmpl.h"
 
 using httplib::Request;
 using httplib::Response;
@@ -13,7 +14,7 @@ static const std::string footer = DEFAULT_FOOTER;
 
 static void page_root(const Request &req, Response &res)
 {
-	std::stringstream ss;
+	TemplateString ss;
 
 	ss << header << footer;
 	res.set_content(ss.str(), "text/html");

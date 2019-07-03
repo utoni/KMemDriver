@@ -156,6 +156,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="httplib.h" />
+    <ClInclude Include="minitmpl.h" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="www.h" />
   </ItemGroup>
