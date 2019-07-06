@@ -21,10 +21,10 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\Driver.h">
+    <ClInclude Include="..\include\KInterface.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\KInterface.h">
+    <ClInclude Include="..\include\KMemDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

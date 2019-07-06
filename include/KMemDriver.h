@@ -4,6 +4,9 @@
 #include "Native.h"
 #else
 #include <windows.h>
+#ifndef NTSTATUS
+typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
+#endif
 #endif
 
 #define HDR_MAGIC				0xDEADC0DE

@@ -1,6 +1,7 @@
 #include "pch.h"
 #include <iostream>
 #include <sstream>
+#include <KInterface.h>
 #include "www.h"
 #include "minitmpl.h"
 
@@ -27,6 +28,7 @@ static std::string& template_test_cb(std::string &out)
 
 int main()
 {
+	KInterface &ki = KInterface::getInstance();
 	httplib::Server httpServer;
 
 	TemplateString::registerTemplateCallback("<% CONTENT %>", template_test_cb);

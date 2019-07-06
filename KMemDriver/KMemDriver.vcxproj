@@ -172,10 +172,10 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Driver.c" />
+    <ClCompile Include="KMemDriver.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\include\Driver.h" />
+    <ClInclude Include="..\include\KMemDriver.h" />
     <ClInclude Include="Imports.h" />
     <ClInclude Include="Native.h" />
   </ItemGroup>
