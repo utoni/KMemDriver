@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KMemDriver", "KMemDriver\KMemDriver.vcxproj", "{5B65BD0E-C43C-41E3-A016-1CD0B092998F}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KTest", "KTest\KTest.vcxproj", "{8661069D-CE09-4A70-8C75-8F33E77732E6}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Hunted", "Hunted\Hunted.vcxproj", "{8661069D-CE09-4A70-8C75-8F33E77732E6}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemDriverLib", "MemDriverLib\MemDriverLib.vcxproj", "{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}"
 EndProject
