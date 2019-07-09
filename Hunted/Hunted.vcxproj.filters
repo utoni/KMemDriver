@@ -32,8 +32,5 @@
     <ClCompile Include="Hunted.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="KInterface.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>

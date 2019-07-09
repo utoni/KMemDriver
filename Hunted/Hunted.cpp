@@ -6,8 +6,6 @@
 #include <iomanip>
 #include <windows.h>
 
-#pragma comment(lib, "User32.lib")
-
 #define WHEXOUT std::setfill(L'0') << std::setw(16) << std::hex
 
 BOOL running = false;
