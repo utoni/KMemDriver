@@ -16,7 +16,22 @@
 "<a class = \"nav-link\" href = \"#\">Link 2 </a>\n" \
 "</li>\n<li class = \"nav-item\">\n" \
 "<a class = \"nav-link\" href = \"#\">Link 3 </a>\n" \
+"</li>\n<li class = \"nav-item\">\n" \
+"<% STATUS %>" \
 "</li>\n</ul>\n</nav>\n<br>\n\n" \
 "<div class = \"container-fluid\">\n\n" \
 "<% CONTENT %>\n\n" \
 "</div>\n\n</body>\n</html>\n\n";
+
+#define STATUS_OFFLINE \
+"<span class=\"badge badge-pill badge-danger\">Offline</span>\n"
+
+#define STATUS_ONLINE \
+"<span class=\"badge badge-pill badge-success\">Online</span>\n"
+
+#define STATUS_PROCESS \
+"<span class=\"badge badge-pill badge-success\">PID <% PID %></span>\n"
+
+#define PROCESS_FIND \
+"<li class = \"nav-item\">\n" \
+"</li>\n"
