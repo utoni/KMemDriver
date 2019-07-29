@@ -8,8 +8,8 @@
 
 #define WHEXOUT std::setfill(L'0') << std::setw(16) << std::hex
 
-BOOL running = false;
-const wchar_t *wName = L"HUNT";
+static BOOL running = false;
+static const wchar_t *wName = L"HUNT";
 
 typedef struct SSystemGlobalEnvironment
 {
@@ -90,8 +90,7 @@ typedef struct SSystemGlobalEnvironment
 } SSystemGlobalEnvironment;
 
 
-
-bool consoleHandler(int signal) {
+static bool consoleHandler(int signal) {
 	if (signal == CTRL_C_EVENT) {
 		if (!running)
 			exit(EXIT_FAILURE);
@@ -101,7 +100,7 @@ bool consoleHandler(int signal) {
 	return true;
 }
 
-void printBuf(UCHAR *buf, SIZE_T siz, SIZE_T bytesBeforeNewline) {
+static void printBuf(UCHAR *buf, SIZE_T siz, SIZE_T bytesBeforeNewline) {
 	unsigned int i, j;
 	const unsigned char colors[] = { 10,11,12,13,14,15 };
 	HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -117,7 +116,7 @@ void printBuf(UCHAR *buf, SIZE_T siz, SIZE_T bytesBeforeNewline) {
 	SetConsoleTextAttribute(hConsole, 15);
 }
 
-BOOL CALLBACK enumWindowsProc(HWND hWnd, LPARAM lParam)
+static BOOL CALLBACK enumWindowsProc(HWND hWnd, LPARAM lParam)
 {
 	int length = GetWindowTextLength(hWnd);
 	TCHAR* buffer;
