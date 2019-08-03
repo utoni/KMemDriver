@@ -126,3 +126,8 @@ NTSTATUS ZwFreeVirtualMemory(
 	_Inout_ PSIZE_T RegionSize,
 	_In_    ULONG   FreeType
 );
+
+NTKERNELAPI
+PVOID
+NTAPI
+PsGetProcessWow64Process(IN PEPROCESS Process);

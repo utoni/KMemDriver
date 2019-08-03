@@ -67,7 +67,8 @@ NTSTATUS GetPages(
 NTSTATUS GetModules(
 	IN PEPROCESS pEProcess,
 	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
-	IN SIZE_T start_index
+	IN SIZE_T start_index,
+	IN BOOLEAN isWow64
 );
 NTSTATUS KeReadVirtualMemory(
 	IN PEPROCESS pEProcess,
@@ -485,7 +486,8 @@ NTSTATUS KRThread(IN PVOID pArg)
 						PMODULE_DATA entries = &mods->modules_start;
 						KDBG("GetModules max entries: %u\n", siz);
 						KeStackAttachProcess((PRKPROCESS)lastPEP, &apcstate);
-						mods->StatusRes = GetModules(lastPEP, entries, &siz, mods->StartIndex);
+						mods->StatusRes = GetModules(lastPEP, entries, &siz, mods->StartIndex,
+							PsGetProcessWow64Process(lastPEP) != NULL);
 						KeUnstackDetachProcess(&apcstate);
 						mods->modules = siz;
 						siz = (sizeof *mods - sizeof mods->modules_start) +
@@ -732,56 +734,112 @@ NTSTATUS GetPages(
 NTSTATUS GetModules(
 	IN PEPROCESS Process,
 	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
-	IN SIZE_T start_index
+	IN SIZE_T start_index,
+	IN BOOLEAN isWow64
 )
 {
 	SIZE_T used = 0, index = 0;
 	INT waitCount = 0;
 
-	PPEB peb = PsGetProcessPeb(Process);
-	if (!peb) {
-		KDBG("PsGetProcessPeb failed");
-		return STATUS_UNSUCCESSFUL;
+	if (isWow64) {
+		PPEB32 peb32 = (PPEB32)PsGetProcessWow64Process(Process);
+		if (!peb32) {
+			KDBG("PsGetProcessWow64Process failed");
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		PPEB_LDR_DATA32 ldr32 = (PPEB_LDR_DATA32)peb32->Ldr;
+
+		if (!ldr32) {
+			KDBG("peb32->Ldr is invalid");
+			return STATUS_UNSUCCESSFUL;
+		}
+
+		if (!ldr32->Initialized) {
+			while (!ldr32->Initialized && waitCount++ < 4) {
+				LARGE_INTEGER wait = { .QuadPart = -2500 };
+				KeDelayExecutionThread(KernelMode, TRUE, &wait);
+			}
+
+			if (!ldr32->Initialized) {
+				KDBG("ldr32->Initialized is 0");
+				return STATUS_UNSUCCESSFUL;
+			}
+		}
+
+		for (PLIST_ENTRY32 listEntry = (PLIST_ENTRY32)ldr32->InLoadOrderModuleList.Flink;
+			listEntry != &ldr32->InLoadOrderModuleList && used < *psiz;
+			listEntry = (PLIST_ENTRY32)listEntry->Flink, ++pmod, ++index) {
+			if (index < start_index)
+				continue;
+			used++;
+
+			PLDR_DATA_TABLE_ENTRY32 ldrEntry32 = CONTAINING_RECORD(listEntry, LDR_DATA_TABLE_ENTRY32, InLoadOrderLinks);
+			ANSI_STRING name;
+			UNICODE_STRING tmpUnicodeStr;
+			tmpUnicodeStr.Buffer = (PWCH)ldrEntry32->BaseDllName.Buffer;
+			tmpUnicodeStr.Length = ldrEntry32->BaseDllName.Length;
+			tmpUnicodeStr.MaximumLength = ldrEntry32->BaseDllName.MaximumLength;
+			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &tmpUnicodeStr, TRUE))) {
+				RtlCopyMemory(pmod->BaseDllName, name.Buffer,
+					(name.Length > sizeof pmod->BaseDllName ?
+						sizeof pmod->BaseDllName : name.Length)
+				);
+				RtlFreeAnsiString(&name);
+			}
+			pmod->DllBase = (PVOID)ldrEntry32->DllBase;
+			pmod->SizeOfImage = ldrEntry32->SizeOfImage;
+			KDBG("DLL32 #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
+				pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
+		}
 	}
+	else {
+		PPEB peb = PsGetProcessPeb(Process);
+		if (!peb) {
+			KDBG("PsGetProcessPeb failed");
+			return STATUS_UNSUCCESSFUL;
+		}
 
-	PPEB_LDR_DATA ldr = peb->Ldr;
+		PPEB_LDR_DATA ldr = peb->Ldr;
 
-	if (!ldr) {
-		KDBG("peb->Ldr is invalid");
-		return STATUS_UNSUCCESSFUL;
-	}
-
-	if (!ldr->Initialized) {
-		while (!ldr->Initialized && waitCount++ < 4) {
-			LARGE_INTEGER wait = { .QuadPart = -2500 };
-			KeDelayExecutionThread(KernelMode, TRUE, &wait);
+		if (!ldr) {
+			KDBG("peb->Ldr is invalid");
+			return STATUS_UNSUCCESSFUL;
 		}
 
 		if (!ldr->Initialized) {
-			KDBG("ldr->Initialized is 0");
-			return STATUS_UNSUCCESSFUL;
-		}
-	}
+			while (!ldr->Initialized && waitCount++ < 4) {
+				LARGE_INTEGER wait = { .QuadPart = -2500 };
+				KeDelayExecutionThread(KernelMode, TRUE, &wait);
+			}
 
-	for (PLIST_ENTRY listEntry = (PLIST_ENTRY)ldr->InLoadOrderModuleList.Flink;
-		listEntry != &ldr->InLoadOrderModuleList && used < *psiz;
-		listEntry = (PLIST_ENTRY)listEntry->Flink, ++pmod, ++index) {
-		if (index < start_index)
-			continue;
-		used++;
-
-		PLDR_DATA_TABLE_ENTRY ldrEntry = CONTAINING_RECORD(listEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
-		ANSI_STRING name;
-		if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &ldrEntry->BaseDllName, sizeof pmod->BaseDllName))) {
-			RtlCopyMemory(pmod->BaseDllName, name.Buffer,
-				(name.Length > sizeof pmod->BaseDllName ?
-					sizeof pmod->BaseDllName : name.Length)
-			);
+			if (!ldr->Initialized) {
+				KDBG("ldr->Initialized is 0");
+				return STATUS_UNSUCCESSFUL;
+			}
 		}
-		pmod->DllBase = ldrEntry->DllBase;
-		pmod->SizeOfImage = ldrEntry->SizeOfImage;
-		KDBG("DLL #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
-			pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
+
+		for (PLIST_ENTRY listEntry = (PLIST_ENTRY)ldr->InLoadOrderModuleList.Flink;
+			listEntry != &ldr->InLoadOrderModuleList && used < *psiz;
+			listEntry = (PLIST_ENTRY)listEntry->Flink, ++pmod, ++index) {
+			if (index < start_index)
+				continue;
+			used++;
+
+			PLDR_DATA_TABLE_ENTRY ldrEntry = CONTAINING_RECORD(listEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
+			ANSI_STRING name;
+			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &ldrEntry->BaseDllName, TRUE))) {
+				RtlCopyMemory(pmod->BaseDllName, name.Buffer,
+					(name.Length > sizeof pmod->BaseDllName ?
+						sizeof pmod->BaseDllName : name.Length)
+				);
+				RtlFreeAnsiString(&name);
+			}
+			pmod->DllBase = ldrEntry->DllBase;
+			pmod->SizeOfImage = ldrEntry->SizeOfImage;
+			KDBG("DLL #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
+				pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
+		}
 	}
 
 	*psiz = used;
