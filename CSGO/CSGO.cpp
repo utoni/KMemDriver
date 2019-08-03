@@ -110,25 +110,52 @@ int wmain(int argc, wchar_t **argv)
 		std::wcout << L"Kernel Interface Handshake() failed" << std::endl;
 		return 1;
 	}
-	if (targetPID) {
-		if (!ki.Modules(targetPID, modules))
-			std::wcout << L"Kernel Interface Modules() failed with 0x"
-			<< std::hex << ki.getLastNtStatus() << std::endl;
-		else std::wcout << L"Got " << std::dec << modules.size() << L" modules for pid 0x"
-			<< std::hex << targetPID << std::endl;
-		if (!ki.Pages(targetPID, pages))
-			std::wcout << L"Kernel Interface Pages() failed with 0x"
-			<< std::hex << ki.getLastNtStatus() << std::endl;
-		else std::wcout << L"Got " << std::dec << pages.size() << L" mapped pages for pid 0x"
-			<< std::hex << targetPID << std::endl;
-	}
 
+	if (!ki.Modules(targetPID, modules))
+		std::wcout << L"Kernel Interface Modules() failed with 0x"
+		<< std::hex << ki.getLastNtStatus() << std::endl;
+	else std::wcout << L"Got " << std::dec << modules.size() << L" modules for pid 0x"
+		<< std::hex << targetPID << std::endl;
+#if 0
+	if (!ki.Pages(targetPID, pages))
+		std::wcout << L"Kernel Interface Pages() failed with 0x"
+		<< std::hex << ki.getLastNtStatus() << std::endl;
+	else std::wcout << L"Got " << std::dec << pages.size() << L" mapped pages for pid 0x"
+		<< std::hex << targetPID << std::endl;
+#endif
+
+	MODULE_DATA *engineDLL = NULL;
 	for (MODULE_DATA& md : modules) {
-		std::wcout << md.BaseDllName << std::endl;
+		if (strncmp(md.BaseDllName, "engine.dll", sizeof md.BaseDllName) == 0) {
+			std::wcout << L"FOUND ENGINE DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
+			engineDLL = &md;
+		}
 	}
 
 	running = TRUE;
 	do {
+		if (engineDLL) {
+			DWORD dwClientState = 5836172;
+			PVOID clientStatePtr = (PVOID)((ULONG_PTR)engineDLL->DllBase + dwClientState);
+			std::wcout << L"engine.dll+dwClientState: " << std::hex << clientStatePtr << std::endl;
+			clientStatePtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, clientStatePtr));
+			DWORD clientState = KMemory::Rpm<DWORD>(targetPID, clientStatePtr);
+			std::wcout << L"clientStatePtr..........: " << std::hex << clientStatePtr << std::endl;
+			std::wcout << L"clientState.............: " << std::hex << clientState << std::endl;
+
+			DWORD dwLocalPlayer = 384;
+			PVOID localPlayerPtr = (PVOID)((ULONG_PTR)clientStatePtr + dwLocalPlayer);
+			DWORD localPlayer = KMemory::Rpm<DWORD>(targetPID, localPlayerPtr);
+			std::wcout << L"localPlayerPtr..........: " << std::hex << localPlayerPtr << std::endl;
+			std::wcout << L"localPlayer.............: " << std::hex << localPlayer << std::endl;
+
+			DWORD dwPlayerHealth = 256;
+			PVOID playerHealthPtr = (PVOID)((ULONG_PTR)localPlayerPtr + dwPlayerHealth);
+			DWORD playerHealth = KMemory::Rpm<DWORD>(targetPID, playerHealthPtr);
+			std::wcout << L"playerHealthPtr.........: " << std::hex << playerHealthPtr << std::endl;
+			std::wcout << L"playerHealth............: " << std::hex << playerHealth << std::endl;
+		}
+
 		if (ki.RecvWait() == SRR_TIMEOUT) {
 			std::wcout << L"Ping -> ";
 			if (!ki.Ping()) {
