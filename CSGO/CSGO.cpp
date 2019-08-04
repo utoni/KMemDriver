@@ -4,6 +4,8 @@
 
 #include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <thread>
 #include <windows.h>
 
 static BOOL running = false;
@@ -125,36 +127,78 @@ int wmain(int argc, wchar_t **argv)
 #endif
 
 	MODULE_DATA *engineDLL = NULL;
+	MODULE_DATA *clientDLL = NULL;
 	for (MODULE_DATA& md : modules) {
 		if (strncmp(md.BaseDllName, "engine.dll", sizeof md.BaseDllName) == 0) {
 			std::wcout << L"FOUND ENGINE DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
 			engineDLL = &md;
+		}
+		if (strncmp(md.BaseDllName, "client_panorama.dll", sizeof md.BaseDllName) == 0) {
+			std::wcout << L"FOUND CLIENT DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
+			clientDLL = &md;
 		}
 	}
 
 	running = TRUE;
 	do {
 		if (engineDLL) {
-			DWORD dwClientState = 5836172;
-			PVOID clientStatePtr = (PVOID)((ULONG_PTR)engineDLL->DllBase + dwClientState);
-			std::wcout << L"engine.dll+dwClientState: " << std::hex << clientStatePtr << std::endl;
-			clientStatePtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, clientStatePtr));
-			DWORD clientState = KMemory::Rpm<DWORD>(targetPID, clientStatePtr);
-			std::wcout << L"clientStatePtr..........: " << std::hex << clientStatePtr << std::endl;
-			std::wcout << L"clientState.............: " << std::hex << clientState << std::endl;
-
-			DWORD dwLocalPlayer = 384;
-			PVOID localPlayerPtr = (PVOID)((ULONG_PTR)clientStatePtr + dwLocalPlayer);
-			DWORD localPlayer = KMemory::Rpm<DWORD>(targetPID, localPlayerPtr);
-			std::wcout << L"localPlayerPtr..........: " << std::hex << localPlayerPtr << std::endl;
-			std::wcout << L"localPlayer.............: " << std::hex << localPlayer << std::endl;
-
-			DWORD dwPlayerHealth = 256;
-			PVOID playerHealthPtr = (PVOID)((ULONG_PTR)localPlayerPtr + dwPlayerHealth);
-			DWORD playerHealth = KMemory::Rpm<DWORD>(targetPID, playerHealthPtr);
-			std::wcout << L"playerHealthPtr.........: " << std::hex << playerHealthPtr << std::endl;
-			std::wcout << L"playerHealth............: " << std::hex << playerHealth << std::endl;
+			/* unused */
 		}
+
+		if (clientDLL) {
+			DWORD dwLocalPlayer = 13580876;
+			PVOID localPlayerPtr = (PVOID)((ULONG_PTR)clientDLL->DllBase + dwLocalPlayer);
+			localPlayerPtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, localPlayerPtr));
+			std::wcout << L"localPlayerPtr..................: " << std::hex << localPlayerPtr << std::endl;
+
+			DWORD dwEntityList = 80763620;
+			PVOID entityListPtr = (PVOID)((ULONG_PTR)clientDLL->DllBase + dwEntityList);
+			std::wcout << L"client_panorama.dll+dwEntityList: " << std::hex << entityListPtr << std::endl;
+
+			for (size_t i = 0; i < 32; ++i) {
+				PVOID entityPtr = (PVOID)((ULONG_PTR)entityListPtr + (i * 0x10));
+				try {
+					entityPtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, entityPtr));
+					if (!entityPtr) {
+						continue;
+					}
+				}
+				catch (std::runtime_error &) {
+					continue;
+				}
+
+				DWORD dwHealth = 256;
+				PVOID healthPtr = (PVOID)((ULONG_PTR)entityPtr + dwHealth);
+				DWORD health;
+				try {
+					health = KMemory::Rpm<DWORD>(targetPID, healthPtr);
+				}
+				catch (std::runtime_error &) {
+					continue;
+				}
+
+				std::wcout << L"entityPtr.......................: " << std::hex << entityPtr << " -> " << std::dec << health << std::endl;
+
+				DWORD dwSpotted = 2365;
+				PVOID spottedPtr = (PVOID)((ULONG_PTR)entityPtr + dwSpotted);
+				DWORD spotted = KMemory::Rpm<DWORD>(targetPID, spottedPtr);
+				DWORD dwSpottedBy = 2432;
+				PVOID spottedByPtr = (PVOID)((ULONG_PTR)entityPtr + dwSpottedBy);
+				DWORD spottedBy = KMemory::Rpm<DWORD>(targetPID, spottedByPtr);
+				if (spotted) {
+					spotted = 0;
+				}
+				else {
+					spotted = 1;
+					spottedBy |= 0xFF;
+					KMemory::Wpm<DWORD>(targetPID, spottedByPtr, &spottedBy);
+				}
+				KMemory::Wpm<DWORD>(targetPID, spottedPtr, &spotted);
+				//std::wcout << L"Sp: " << spotted << std::endl;
+			}
+
+			std::this_thread::sleep_for(std::chrono::microseconds(250000));
+		} else
 
 		if (ki.RecvWait() == SRR_TIMEOUT) {
 			std::wcout << L"Ping -> ";
