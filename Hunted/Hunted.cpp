@@ -11,84 +11,6 @@
 static BOOL running = false;
 static const wchar_t *wName = L"HUNT";
 
-typedef struct SSystemGlobalEnvironment
-{
-	PVOID pDialogSystem;
-	PVOID p3DEngine;
-	PVOID pNetwork;
-	PVOID pNetContext;
-	PVOID pLobby;
-	PVOID pScriptSystem;
-	PVOID pPhysicalWorld;
-	PVOID pFlowSystem;
-	PVOID pInput;
-	PVOID pStatoscope;
-	PVOID pCryPak;
-	PVOID pFileChangeMonitor;
-	PVOID pProfileLogSystem;
-	PVOID pParticleManager;
-	PVOID pOpticsManager;
-	PVOID pFrameProfileSystem;
-	PVOID pTimer;
-	PVOID pCryFont;
-	PVOID pGameFramework;
-	PVOID pLocalMemoryUsage;
-	PVOID pEntitySystem;
-	PVOID pConsole;
-	PVOID pAudioSystem;
-	PVOID pSystem;
-	PVOID pCharacterManager;
-	PVOID pAISystem;
-	PVOID pLog;
-	PVOID pCodeCheckpointMgr;
-	PVOID pMovieSystem;
-	PVOID pNameTable;
-	PVOID pRenderer;
-	PVOID pAuxGeomRenderer;
-	PVOID pHardwareMouse;
-	PVOID pMaterialEffects;
-	PVOID pJobManager;
-	PVOID pOverloadSceneManager;
-	PVOID pFlashUI;
-	PVOID pUIFramework;
-	PVOID pServiceNetwork;
-	PVOID pRemoteCommandManager;
-	PVOID pDynamicResponseSystem;
-	PVOID pThreadManager;
-	PVOID pScaleformHelper; // nullptr when Scaleform support is not enabled
-	PVOID pSchematyc;
-	PVOID pSchematyc2;
-	PVOID pReflection;
-
-	PVOID pLiveCreateManager;
-	PVOID pLiveCreateHost;
-	PVOID pMonoRuntime;
-	UINT32 mMainThreadId;      //!< The main thread ID is used in multiple systems so should be stored globally.
-	UINT32 nMainFrameID;
-	const char* szCmdLine = "";       //!< Startup command line.
-
-	//! Generic debug string which can be easily updated by any system and output by the debug handler
-	enum { MAX_DEBUG_STRING_LENGTH = 128 };
-	char szDebugStatus[MAX_DEBUG_STRING_LENGTH];
-
-	//! Used to tell if this is a server/multiplayer instance
-	bool bServer;
-	bool bMultiplayer;
-	bool bHostMigrating;
-	int bDeepProfiling;
-	bool bBootProfilerEnabledFrames;
-	PVOID callbackStartSection;
-	PVOID callbackEndSection;
-	//////////////////////////////////////////////////////////////////////////
-
-	//! Whether we are running unattended, disallows message boxes and other blocking events that require human intervention
-	bool bUnattendedMode;
-	//! Whether we are unit testing
-	bool bTesting;
-
-	bool bNoRandomSeed;
-} SSystemGlobalEnvironment;
-
 
 static bool consoleHandler(int signal) {
 	if (signal == CTRL_C_EVENT) {
@@ -140,32 +62,21 @@ int wmain(int argc, wchar_t **argv)
 	std::vector<MEMORY_BASIC_INFORMATION> pages;
 	std::vector<MODULE_DATA> modules;
 
-	if (argc > 1 && !wcscmp(argv[1], L"test")) {
-		return 0;
-	}
+	std::wcout << L"Waiting for window title: '" << wName << L"'" << std::endl;
 
-	if (argc > 1 && !wcscmp(argv[1], L"wnd")) {
-		if (argc < 3) {
-			std::wcout << L"Window title required!" << std::endl;
+	HWND targetHWND = NULL;
+	while (1) {
+		if (!EnumWindows(enumWindowsProc, (LPARAM)&targetHWND)) {
 			return 1;
 		}
-		wName = argv[2];
-		std::wcout << L"Waiting for window title: '" << wName << L"'" << std::endl;
-
-		HWND targetHWND = NULL;
-		while (1) {
-			if (!EnumWindows(enumWindowsProc, (LPARAM)&targetHWND)) {
-				return 1;
-			}
-			if (targetHWND) {
-				std::wcout << L"Found window '" << wName << L"' with Handle 0x"
-					<< std::hex << targetHWND << std::endl;
-				break;
-			}
-			Sleep(1000);
+		if (targetHWND) {
+			std::wcout << L"Found window '" << wName << L"' with Handle 0x"
+				<< std::hex << targetHWND << std::endl;
+			break;
 		}
-		GetWindowThreadProcessId(targetHWND, (LPDWORD)&targetPID);
+		Sleep(1000);
 	}
+	GetWindowThreadProcessId(targetHWND, (LPDWORD)&targetPID);
 
 	SetConsoleCtrlHandler((PHANDLER_ROUTINE)consoleHandler, TRUE);
 
@@ -225,24 +136,92 @@ int wmain(int argc, wchar_t **argv)
 					if (!strncmp(md.BaseDllName, "CrySystem.dll",
 						sizeof md.BaseDllName))
 					{
-						std::wcout << L"CrySystem.dll......: 0x" << WHEXOUT << md.DllBase << std::endl;
-						UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
-							(PVOID)((UINT64)md.DllBase + 0xA37708));
-
-						std::wcout << L"g_pEnv.............: 0x" << WHEXOUT << g_pEnv << std::endl;
+						std::wcout << L"CrySystem.dll.......: 0x" << WHEXOUT << md.DllBase << std::endl;
 					}
 					else
 						if (!strncmp(md.BaseDllName, "CryEntitySystem.dll",
 							sizeof md.BaseDllName))
 						{
-							std::wcout << L"CryEntitySystem.dll: 0x" << std::hex << md.DllBase << std::endl;
-#if 1
-							/* Found: void CEntitySystem::LoadInternalState(IDataReadStream& reader) */
-							UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
-								(PVOID)((UINT64)md.DllBase + 0x28C400));
+							std::wcout << L"CryEntitySystem.dll.: 0x" << std::hex << md.DllBase << std::endl;
+							/* "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutCEntitySystem C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryEntitySystem\EntitySystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" */
+/*
 
-							std::wcout << L"g_pEnv.............: 0x" << WHEXOUT << g_pEnv << std::endl;
+							class CEntitySystem     size(788880):
+		+---
+ 0      | +--- (base class IEntitySystem)
+ 0      | | {vfptr}
+		| +---
+ 8      | ?$array@V?$vector@PEAUIEntitySystemSink@@V?$allocator@PEAUIEntitySystemSink@@@std@@@std@@$03 m_sinks
+104     | m_pISystem
+112     | SEntityArray m_entityArray
+786524  | ?$vector@IV?$allocator@I@std@@ m_staticEntityIds
+786548  | ?$vector@PEAVCEntity@@V?$allocator@PEAVCEntity@@@std@@ m_deletedEntities
+786572  | ?$vector@PEAVCEntity@@V?$allocator@PEAVCEntity@@@std@@ m_deferredUsedEntities
+786596  | ?$multimap@PEBDIU?$less_stricmp@PEBD@stl@@V?$allocator@U?$pair@QEBDI@std@@@std@@ m_mapEntityNames
+786612  | ?$CEntityComponentsVector@USMinimalEntityComponentRecord@@ m_updatedEntityComponents
+786654  | ?$CEntityComponentsVector@USMinimalEntityComponentRecord@@ m_prePhysicsUpdatedEntityComponents
+786696  | ?$multimap@VCTimeValue@@USEntityTimerEvent@@U?$less@VCTimeValue@@@std@@V?$STLPoolAllocator@U?$pair@$$CBVCTimeValue@@USEntityTimerEvent@@@std@@UPSyncNone@stl@@$0A@$0A@@stl@@ m_timersMap
+786712  | ?$vector@USEntityTimerEvent@@V?$allocator@USEntityTimerEvent@@@std@@ m_currentTimers
+786736  | m_bTimersPause
+		| <alignment member> (size=1)
+786738  | CTimeValue m_nStartPause
+786746  | m_pEntityScriptBinding
+786754  | m_pClassRegistry
+786762  | m_pPhysicsEventListener
+786770  | m_pReflectionRegistry
+786778  | m_pAreaManager
+786786  | m_pEntityLoadManager
+786794  | ?$unordered_map@UCryGUID@@IU?$hash@UCryGUID@@@std@@U?$equal_to@UCryGUID@@@3@V?$allocator@U?$pair@$$CBUCryGUID@@I@std@@@3@ m_guidMap
+786858  | ?$unordered_map@UCryGUID@@IU?$hash@UCryGUID@@@std@@U?$equal_to@UCryGUID@@@3@V?$allocator@U?$pair@$$CBUCryGUID@@I@std@@@3@ m_genIdMap
+786922  | m_pBreakableManager
+786930  | m_pEntityArchetypeManager
+786938  | m_pGeomCacheAttachmentManager
+786946  | m_pCharacterBoneAttachmentManager
+786954  | m_pPartitionGrid
+786962  | m_pProximityTriggerSystem
+786970  | m_idForced
+786974  | m_bLocked
+786975  | m_bSupportLegacy64bitGuids
+786976  | ?$map@V?$CryStringT@D@@PEAVCEntityLayer@@U?$less@V?$CryStringT@D@@@std@@V?$allocator@U?$pair@$$CBV?$CryStringT@D@@PEAVCEntityLayer@@@std@@@4@ m_layers
+786992  | ?$vector@USEntityLayerGarbage@@V?$allocator@USEntityLayerGarbage@@@std@@ m_garbageLayerHeaps
+787016  | ?$unique_ptr@VCEntityComponentsCache@@U?$default_delete@VCEntityComponentsCache@@@std@@ m_entityComponentsCache
+787024  | ?$unique_ptr@VCEntityObjectDebugger@@U?$default_delete@VCEntityObjectDebugger@@@std@@ m_pEntityObjectDebugger
+787032  | ?$vector@USLayerProfile@CEntitySystem@@V?$allocator@USLayerProfile@CEntitySystem@@@std@@ m_layerProfiles
+787056  | ?$array@USProfiledEntityEvent@CEntitySystem@@$0DJ@ m_profiledEvents
+
+
+class CEntitySystem::SEntityArray       size(786412):
+		+---
+ 0      | +--- (base class SSaltBufferArray)
+ 0      | | ?$array@USSaltBufferElement@SSaltBufferArray@@$0PPPO@ m_buffer
+262136. | | m_freeListStartIndex (bitstart=0,nbits=16)
+262138. | | m_maxUsedEntityIndex (bitstart=0,nbits=16)
+		| +---
+262140  | ?$array@PEAVCEntity@@$0PPPO@ m_array
+
+*/
 #if 1
+/* Found: void CEntitySystem::LoadInternalState(IDataReadStream& reader) */
+							UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
+								(PVOID)((UINT64)md.DllBase + 0x28C3F0));
+							std::wcout << L"g_pEnv..............: 0x" << WHEXOUT << g_pEnv << std::endl;
+
+							UINT64 m_idForced = KMemory::Rpm<UINT64>(targetPID,
+								(PVOID)((UINT64)g_pEnv + 786970));
+							std::wcout << L"m_pidForced.........: 0x" << WHEXOUT << m_idForced << std::endl;
+
+							UINT64 m_pISystem = KMemory::Rpm<UINT64>(targetPID,
+								(PVOID)((UINT64)g_pEnv + 104));
+							std::wcout << L"m_pISystem..........: 0x" << WHEXOUT << m_pISystem << std::endl;
+
+							UINT16 m_freeListStartIndex = KMemory::Rpm<UINT16>(targetPID,
+								(PVOID)((UINT64)g_pEnv + 112 + 262136));
+							std::wcout << L"m_freeListStartIndex: 0x" << WHEXOUT << m_freeListStartIndex << std::endl;
+
+							UINT16 m_maxUsedEntityIndex = KMemory::Rpm<UINT16>(targetPID,
+								(PVOID)((UINT64)g_pEnv + 112 + 262138));
+							std::wcout << L"m_maxUsedEntityIndex: 0x" << WHEXOUT << m_maxUsedEntityIndex << std::endl;
+#if 0
 							BYTE tmp[sizeof SSystemGlobalEnvironment * 2] = { 0 };
 							SSIZE_T siz = KMemoryBuf::Rpm<sizeof tmp>(targetPID, (PVOID)(g_pEnv), tmp);
 
