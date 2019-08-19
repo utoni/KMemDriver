@@ -2,6 +2,7 @@
 #include "KMemDriver.h"
 #include "KInterface.h"
 
+#include <array>
 #include <iostream>
 #include <iomanip>
 #include <windows.h>
@@ -146,7 +147,7 @@ int wmain(int argc, wchar_t **argv)
 							/* "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutCEntitySystem C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryEntitySystem\EntitySystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" */
 /*
 
-							class CEntitySystem     size(788880):
+class CEntitySystem     size(788880):
 		+---
  0      | +--- (base class IEntitySystem)
  0      | | {vfptr}
@@ -199,6 +200,74 @@ class CEntitySystem::SEntityArray       size(786412):
 		| +---
 262140  | ?$array@PEAVCEntity@@$0PPPO@ m_array
 
+
+class SSaltBufferArray::SSaltBufferElement      size(4):
+		+---
+ 0.     | m_salt (bitstart=0,nbits=16)
+ 2.     | m_nextIndex (bitstart=0,nbits=16)
+		+---
+
+class CEntity   size(412):
+		+---
+ 0      | +--- (base class IEntity)
+ 0      | | {vfptr}
+		| +---
+ 8      | ?$CEnumFlags@W4EInternalFlag@CEntity@@ m_internalFlags
+12      | m_sendEventRecursionCount
+		| <alignment member> (size=1)
+14      | m_componentChangeState
+16      | ?$CryStringT@D m_name
+24      | m_pClass
+32      | m_pArchetype
+40      | STransformHierarchy m_hierarchy
+82      | ?$_smart_ptr@UIMaterial@@ m_pMaterial
+90      | m_pEntityLinks
+98      | m_pGridLocation
+106     | m_pProximityEntity
+114     | ?$unique_ptr@USLegacySchematycData@CEntity@@U?$default_delete@USLegacySchematycData@CEntity@@@std@@ m_pLegacySchematycData
+122     | ?$DynArray@V?$unique_ptr@USExternalEventListener@CEntity@@U?$default_delete@USExternalEventListener@CEntity@@@std@@@std@@HU?$SmallDynStorage@U?$AllocCompatible@UModuleAlloc@NAlloc@@@NAlloc@@@NArray@@ m_externalEventListeners
+130     | ?$CEnumFlags@W4EEvent@Entity@Cry@@ m_eventListenerMask
+138     | ?$DynArray@V?$unique_ptr@USEventListenerSet@CEntity@@U?$default_delete@USEventListenerSet@CEntity@@@std@@@std@@HU?$SmallDynStorage@U?$AllocCompatible@UModuleAlloc@NAlloc@@@NAlloc@@@NArray@@ m_simpleEventListeners
+146     | ?$unique_ptr@UINetEntity@@U?$default_delete@UINetEntity@@@std@@ m_pNetEntity
+154     | CEntityRender m_render
+228     | CEntityPhysics m_physics
+244     | CryGUID m_guid
+260     | m_id
+264     | m_aiObjectID
+268     | m_flags
+272     | m_flagsExtended
+273     | EEntitySimulationMode m_simulationMode
+274     | ?$Vec3_tpl@M m_position
+286     | ?$Quat_tpl@M m_rotation
+302     | ?$Vec3_tpl@M m_scale
+		| <alignment member> (size=6)
+320     | ?$Matrix34H@M m_worldTM
+368     | m_keepAliveCounter
+370     | ?$CEntityComponentsVector@USEntityComponentRecord@@ m_components
+		+---
+
+class Vec3_tpl<double>  size(24):
+		+---
+ 0      | +--- (base class INumberVector<double,3,struct Vec3_tpl<double> >)
+ 0      | | +--- (base class INumberArray<double,3>)
+		| | +---
+		| +---
+ 0      | x
+ 8      | y
+16      | z
+		+---
+
+class Vec3_tpl<float>   size(12):
+		+---
+ 0      | +--- (base class INumberVector<float,3,struct Vec3_tpl<float> >)
+ 0      | | +--- (base class INumberArray<float,3>)
+		| | +---
+		| +---
+ 0      | x
+ 4      | y
+ 8      | z
+		+---
+
 */
 #if 1
 /* Found: void CEntitySystem::LoadInternalState(IDataReadStream& reader) */
@@ -221,6 +290,43 @@ class CEntitySystem::SEntityArray       size(786412):
 							UINT16 m_maxUsedEntityIndex = KMemory::Rpm<UINT16>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 112 + 262138));
 							std::wcout << L"m_maxUsedEntityIndex: 0x" << WHEXOUT << m_maxUsedEntityIndex << std::endl;
+
+							UINT64 startOffsetMaxUsedEntities = (m_maxUsedEntityIndex < m_freeListStartIndex ? m_maxUsedEntityIndex : m_freeListStartIndex) * sizeof(PVOID);
+							std::array<PVOID, 1024> entities;
+							if (KInterface::getInstance().RPM(targetPID, (PVOID)((UINT64)g_pEnv + 112 + 262140 + 12 + startOffsetMaxUsedEntities), (BYTE*)&entities, sizeof entities, NULL)) {
+								for (PVOID ent : entities) {
+									if (ent == NULL) {
+										continue;
+									}
+
+									const UINT64 additional_offset = 4;
+									BYTE entity[412];
+									//std::cout << "Got Entity: " << std::hex << ent << ", ";
+									if (KInterface::getInstance().RPM(targetPID, ent, (BYTE*)&entity[0], sizeof entity, NULL)) {
+
+										PVOID name_str = &entity[16];
+										UINT32 id = *(UINT32 *)&entity[260];
+										UINT32 flags = *(UINT32 *)&entity[268];
+										UINT8 extended = *(UINT8 *)&entity[272];
+										UINT16 keepAlive = *(UINT16 *)&entity[368];
+										float pos_x = *(UINT16 *)&entity[274];
+										float pos_y = *(UINT16 *)&entity[278];
+										float pos_z = *(UINT16 *)&entity[282];
+
+										//if ((flags & 0x2000 /* ENTITY_FLAG_HAS_AI */) == 0 && (flags & 0x8000 /* ENTITY_FLAG_CAMERA_SOURCE */) == 0) {
+										std::cout << "Name Ptr: " << std::hex << name_str
+											<< ", id: " << std::hex << id
+											<< ", flags: " << std::hex << flags
+											//<< ", extended: " << std::hex << extended
+											//<< ", keepAlive: " << keepAlive
+											<< ", pos_x: " << (float)pos_x << ", pos_y: " << (float)pos_y << ", pos_z: " << (float)pos_z
+											<< std::endl;
+										//}
+									}
+									else std::wcerr << "Get Entity failed" << std::endl;
+								}
+							}
+							else std::wcerr << "Get EntityArray failed" << std::endl;
 #if 0
 							BYTE tmp[sizeof SSystemGlobalEnvironment * 2] = { 0 };
 							SSIZE_T siz = KMemoryBuf::Rpm<sizeof tmp>(targetPID, (PVOID)(g_pEnv), tmp);
@@ -288,7 +394,7 @@ class CEntitySystem::SEntityArray       size(786412):
 										<< L": ";
 									printBuf((UCHAR *)((ULONG_PTR)(diff.current_buffer) + e.first), e.second, e.second);
 								}
-							}
+						}
 #endif
 #if 0
 #if 1
@@ -315,7 +421,7 @@ class CEntitySystem::SEntityArray       size(786412):
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
-							}
+				}
 #endif
 #endif
 						}
@@ -329,7 +435,7 @@ class CEntitySystem::SEntityArray       size(786412):
 								(PVOID)((ULONGLONG)md.DllBase + /* 0x19F0F0 */ 0x5EA9DC));
 							std::wcout << L"Display.........: " << std::dec << displayWidth
 								<< " x " << displayHeight << std::endl;
-						}
+			}
 #endif
 #if 0
 						else if (!strncmp(md.BaseDllName, "ntdll.dll",
@@ -359,10 +465,10 @@ class CEntitySystem::SEntityArray       size(786412):
 									*/
 								}
 							}
-						}
+		}
 #endif
-				}
-			}
+	}
+}
 		}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
