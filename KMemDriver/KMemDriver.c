@@ -111,6 +111,10 @@ NTSTATUS VADProtect(
 	IN ULONG_PTR address,
 	IN ULONG prot
 );
+PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
+	PVOID pHandleTable,
+	HANDLE handle
+);
 
 #pragma alloc_text(PAGE, WaitForControlProcess)
 #pragma alloc_text(PAGE, VerifyControlProcess)
@@ -129,6 +133,7 @@ NTSTATUS VADProtect(
 #pragma alloc_text(PAGE, VADFindNodeOrParent)
 #pragma alloc_text(PAGE, VADFind)
 #pragma alloc_text(PAGE, VADProtect)
+#pragma alloc_text(PAGE, ExpLookupHandleTableEntry)
 
 static void fn_zero_text(PVOID fn_start);
 static HANDLE ctrlPID;
@@ -675,6 +680,10 @@ NTSTATUS UpdatePPEPIfRequired(
 				KDBG("VSIZE........: %d\n", *((UINT64 *)pep + 0x338));
 				KDBG("IMAGEFILENAME: %.*s\n", 15, ((const char *)pep + 0x450));
 #endif
+#if 0
+				PVOID handleTable = (PVOID)((ULONG_PTR)pep + 0x418);
+				KDBG("lastPROC HandleTableEntry: %p\n", ExpLookupHandleTableEntry(handleTable, *lastPROC));
+#endif
 			}
 		}
 	}
@@ -846,79 +855,6 @@ NTSTATUS GetModules(
 	return STATUS_SUCCESS;
 }
 
-NTSTATUS KeReadVirtualMemory(
-	IN PEPROCESS Process, IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size
-)
-{
-	NTSTATUS status;
-	SIZE_T Bytes = 0;
-
-	status = MmCopyVirtualMemory(Process, SourceAddress, PsGetCurrentProcess(),
-		TargetAddress, *Size, KernelMode, &Bytes);
-	if (NT_SUCCESS(status))
-	{
-		*Size = Bytes;
-		return STATUS_SUCCESS;
-	}
-	else {
-		return status;
-	}
-}
-
-NTSTATUS KeWriteVirtualMemory(
-	IN PEPROCESS Process, IN PVOID SourceAddress,
-	IN PVOID TargetAddress, IN PSIZE_T Size
-)
-{
-	NTSTATUS status;
-	SIZE_T Bytes = 0;
-
-	status = MmCopyVirtualMemory(PsGetCurrentProcess(), SourceAddress, Process,
-		TargetAddress, *Size, KernelMode, &Bytes);
-	if (NT_SUCCESS(status))
-	{
-		*Size = Bytes;
-		return STATUS_SUCCESS;
-	}
-	else {
-		return status;
-	}
-}
-
-NTSTATUS KeProtectVirtualMemory(
-	IN HANDLE hProcess, IN PVOID addr,
-	IN SIZE_T siz, IN ULONG new_prot,
-	OUT ULONG *old_prot
-)
-{
-	NTSTATUS status;
-	PVOID prot_addr = addr;
-	SIZE_T prot_size = siz;
-	ULONG prot = 0;
-
-	status = ZwProtectVirtualMemory(hProcess, &prot_addr,
-		&prot_size, new_prot, &prot);
-	if (NT_SUCCESS(status)) {
-		*old_prot = prot;
-	}
-	return status;
-}
-
-NTSTATUS KeRestoreProtectVirtualMemory(IN HANDLE hProcess,
-	IN PVOID addr, IN SIZE_T siz,
-	IN ULONG old_prot)
-{
-	NTSTATUS status;
-	PVOID prot_addr = addr;
-	SIZE_T prot_size = siz;
-	ULONG prot = 0;
-
-	status = ZwProtectVirtualMemory(hProcess, &prot_addr,
-		&prot_size, old_prot, &prot);
-	return status;
-}
-
 static void fn_zero_text(PVOID fn_start)
 {
 	SIZE_T i;
@@ -1085,4 +1021,29 @@ NTSTATUS VADProtect(
 		pVadShort->u.VadFlags.Protection = prot;
 
 	return status;
+}
+
+PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
+{
+	unsigned __int64 v2; // rdx
+	__int64 v3; // r8
+	signed __int64 v4; // rax
+	__int64 v5; // rax
+
+	v2 = (__int64)handle & 0xFFFFFFFFFFFFFFFCui64;
+	if (v2 >= *(DWORD*)pHandleTable)
+		return 0i64;
+	v3 = *((uintptr_t*)pHandleTable + 1);
+	v4 = *((uintptr_t *)pHandleTable + 1) & 3i64;
+	if ((UINT32)v4 == 1)
+	{
+		v5 = *(uintptr_t*)(v3 + 8 * (v2 >> 10) - 1);
+		return (PHANDLE_TABLE_ENTRY)(v5 + 4 * (v2 & 0x3FF));
+	}
+	if ((UINT32)v4)
+	{
+		v5 = *(uintptr_t*)(*(uintptr_t *)(v3 + 8 * (v2 >> 19) - 2) + 8 * ((v2 >> 10) & 0x1FF));
+		return (PHANDLE_TABLE_ENTRY)(v5 + 4 * (v2 & 0x3FF));
+	}
+	return (PHANDLE_TABLE_ENTRY)(v3 + 4 * v2);
 }

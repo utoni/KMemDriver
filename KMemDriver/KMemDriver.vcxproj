@@ -159,6 +159,7 @@
     <ClCompile>
       <PreprocessorDefinitions>KERNEL_MODULE;_DEBUG_;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <AdditionalIncludeDirectories>$(SolutionDir)include;$(SolutionDir)$(SolutionName);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -173,6 +174,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KMemDriver.c" />
+    <ClCompile Include="Memory.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\KMemDriver.h" />

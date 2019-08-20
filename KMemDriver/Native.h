@@ -231,5 +231,65 @@ typedef struct _RTL_AVL_TREE // Size=8
 	UINT64 NumberGenericTableElements;
 } RTL_AVL_TREE, *PRTL_AVL_TREE, MM_AVL_TABLE, *PMM_AVL_TABLE;
 
+typedef struct _HANDLE_TABLE_ENTRY_INFO {
+	UINT32 AuditMask;
+	UINT32 MaxRelativeAccessMask;
+} HANDLE_TABLE_ENTRY_INFO, *PHANDLE_TABLE_ENTRY_INFO;
+
+typedef struct _HANDLE_TABLE_ENTRY
+{
+	union
+	{
+		PVOID Object;
+		ULONG ObAttributes;
+		PHANDLE_TABLE_ENTRY_INFO InfoTable;
+		ULONG Value;
+	};
+	union
+	{
+		ULONG GrantedAccess;
+		struct
+		{
+			SHORT GrantedAccessIndex;
+			SHORT CreatorBackTraceIndex;
+		};
+		LONG NextFreeTableEntry;
+	};
+} HANDLE_TABLE_ENTRY, *PHANDLE_TABLE_ENTRY;
+
+typedef struct _HANDLE_TABLE_FREE_LIST
+{
+	EX_PUSH_LOCK FreeListLock;
+	PHANDLE_TABLE_ENTRY FirstFreeHandleEntry;
+	PHANDLE_TABLE_ENTRY LastFreeHandleEntry;
+	UINT32 HandleCount;
+	UINT32 HighWaterMark;
+} HANDLE_TABLE_FREE_LIST, *PHANDLE_TABLE_FREE_LIST;
+
+typedef struct _HANDLE_TABLE
+{
+	UINT32 NextHandleNeedingPool;
+	UINT32 ExtraInfoPages;
+	UINT32 TableCode;
+	PEPROCESS QuotaProcess;
+	LIST_ENTRY HandleTableList;
+	UINT32 UniqueProcessId;
+	union {
+		UINT32 Flags;
+		struct {
+			UINT32 StrictFIFO : 1;
+			UINT32 EnableHandleExceptions : 1;
+			UINT32 Rundown : 1;
+			UINT32 Duplicated : 1;
+			UINT32 RaiseUMExceptionOnInvalidHandleClose : 1;
+		};
+	};
+	EX_PUSH_LOCK HandleContentionEvent;
+	EX_PUSH_LOCK HandleTableLock;
+	HANDLE_TABLE_FREE_LIST FreeLists;
+	UCHAR ActualEntry[32];
+	PVOID DebugInfo;
+} PHANDLE_TABLE;
+
 #pragma pack(pop)
 #pragma warning(default : 4214 4201)
