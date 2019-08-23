@@ -175,6 +175,7 @@
   <ItemGroup>
     <ClCompile Include="KMemDriver.c" />
     <ClCompile Include="Memory.c" />
+    <ClCompile Include="VAD.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\KMemDriver.h" />

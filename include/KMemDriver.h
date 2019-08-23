@@ -2,6 +2,11 @@
 
 #ifdef KERNEL_MODULE
 #include "Native.h"
+#ifdef _DEBUG_
+#define KDBG(fmt, ...) DbgPrint("KMemDriver[%01d]: " fmt, KeGetCurrentIrql(), __VA_ARGS__)
+#else
+#define KDBG(fmt, ...)
+#endif
 #else
 #include <windows.h>
 #ifndef NTSTATUS
