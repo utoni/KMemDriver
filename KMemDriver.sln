@@ -16,6 +16,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MemDriverWeb", "MemDriverWe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CSGO", "CSGO\CSGO.vcxproj", "{65C081C2-3A90-470C-BF06-AFF2EEB00C25}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CMD", "CMD\CMD.vcxproj", "{231929F8-2FBF-45D9-91B8-AD835ED166A6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -68,6 +70,14 @@ Global
 		{65C081C2-3A90-470C-BF06-AFF2EEB00C25}.Release|x64.Build.0 = Release|x64
 		{65C081C2-3A90-470C-BF06-AFF2EEB00C25}.Release|x86.ActiveCfg = Release|Win32
 		{65C081C2-3A90-470C-BF06-AFF2EEB00C25}.Release|x86.Build.0 = Release|Win32
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Debug|x64.ActiveCfg = Debug|x64
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Debug|x64.Build.0 = Debug|x64
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Debug|x86.ActiveCfg = Debug|Win32
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Debug|x86.Build.0 = Debug|Win32
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Release|x64.ActiveCfg = Release|x64
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Release|x64.Build.0 = Release|x64
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Release|x86.ActiveCfg = Release|Win32
+		{231929F8-2FBF-45D9-91B8-AD835ED166A6}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

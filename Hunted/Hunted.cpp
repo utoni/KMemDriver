@@ -138,6 +138,8 @@ int wmain(int argc, wchar_t **argv)
 						sizeof md.BaseDllName))
 					{
 						std::wcout << L"CrySystem.dll.......: 0x" << WHEXOUT << md.DllBase << std::endl;
+						UINT32 tmp = 0xDEADBEEF;
+						KMemory::Wpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x563000), &tmp);
 					}
 					else
 						if (!strncmp(md.BaseDllName, "CryEntitySystem.dll",
@@ -292,6 +294,7 @@ class Vec3_tpl<float>   size(12):
 							std::wcout << L"m_maxUsedEntityIndex: 0x" << WHEXOUT << m_maxUsedEntityIndex << std::endl;
 
 							UINT64 startOffsetMaxUsedEntities = (m_maxUsedEntityIndex < m_freeListStartIndex ? m_maxUsedEntityIndex : m_freeListStartIndex) * sizeof(PVOID);
+							startOffsetMaxUsedEntities -= 50 * sizeof(PVOID);
 							std::array<PVOID, 1024> entities;
 							if (KInterface::getInstance().RPM(targetPID, (PVOID)((UINT64)g_pEnv + 112 + 262140 + 12 + startOffsetMaxUsedEntities), (BYTE*)&entities, sizeof entities, NULL)) {
 								for (PVOID ent : entities) {
@@ -299,29 +302,40 @@ class Vec3_tpl<float>   size(12):
 										continue;
 									}
 
-									const UINT64 additional_offset = 4;
+									const UINT64 additional_offset = 14;
 									BYTE entity[412];
 									//std::cout << "Got Entity: " << std::hex << ent << ", ";
 									if (KInterface::getInstance().RPM(targetPID, ent, (BYTE*)&entity[0], sizeof entity, NULL)) {
 
-										PVOID name_str = &entity[16];
-										UINT32 id = *(UINT32 *)&entity[260];
-										UINT32 flags = *(UINT32 *)&entity[268];
-										UINT8 extended = *(UINT8 *)&entity[272];
-										UINT16 keepAlive = *(UINT16 *)&entity[368];
-										float pos_x = *(UINT16 *)&entity[274];
-										float pos_y = *(UINT16 *)&entity[278];
-										float pos_z = *(UINT16 *)&entity[282];
+										PVOID name_str = &entity[16 + additional_offset];
+										UINT32 id = *(UINT32 *)&entity[260 + additional_offset];
+										UINT32 flags = *(UINT32 *)&entity[268 + additional_offset];
+										UINT8 extended = *(UINT8 *)&entity[272 + additional_offset];
+										UINT16 keepAlive = *(UINT16 *)&entity[368 + additional_offset];
+										float pos_x = *(float *)&entity[274 + additional_offset];
+										float pos_y = *(float *)&entity[278 + additional_offset];
+										float pos_z = *(float *)&entity[282 + additional_offset];
+
+										if (keepAlive == 0 || id == 0) {
+											continue;
+										}
 
 										//if ((flags & 0x2000 /* ENTITY_FLAG_HAS_AI */) == 0 && (flags & 0x8000 /* ENTITY_FLAG_CAMERA_SOURCE */) == 0) {
+#if 0
 										std::cout << "Name Ptr: " << std::hex << name_str
-											<< ", id: " << std::hex << id
-											<< ", flags: " << std::hex << flags
-											//<< ", extended: " << std::hex << extended
-											//<< ", keepAlive: " << keepAlive
-											<< ", pos_x: " << (float)pos_x << ", pos_y: " << (float)pos_y << ", pos_z: " << (float)pos_z
+											<< ", id: " << std::setw(8) << std::hex << (UINT32)id
+											<< ", flags: " << std::setw(8) << std::hex << (UINT32)flags
+											<< ", extended: " << std::setw(8) << std::hex << (UINT32)extended
+											<< ", keepAlive: " << std::setw(8) << std::hex << (UINT16)keepAlive
+											<< ", pos_x: " << std::setw(8) << (float)pos_x
+											<< ", pos_y: " << std::setw(8) << (float)pos_y
+											<< ", pos_z: " << std::setw(8) << (float)pos_z
 											<< std::endl;
+#endif
 										//}
+
+										printBuf(entity, sizeof entity, 32);
+										//break;
 									}
 									else std::wcerr << "Get Entity failed" << std::endl;
 								}
@@ -394,7 +408,7 @@ class Vec3_tpl<float>   size(12):
 										<< L": ";
 									printBuf((UCHAR *)((ULONG_PTR)(diff.current_buffer) + e.first), e.second, e.second);
 								}
-						}
+							}
 #endif
 #if 0
 #if 1
@@ -421,7 +435,7 @@ class Vec3_tpl<float>   size(12):
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
-				}
+							}
 #endif
 #endif
 						}
@@ -435,7 +449,7 @@ class Vec3_tpl<float>   size(12):
 								(PVOID)((ULONGLONG)md.DllBase + /* 0x19F0F0 */ 0x5EA9DC));
 							std::wcout << L"Display.........: " << std::dec << displayWidth
 								<< " x " << displayHeight << std::endl;
-			}
+						}
 #endif
 #if 0
 						else if (!strncmp(md.BaseDllName, "ntdll.dll",
@@ -465,10 +479,10 @@ class Vec3_tpl<float>   size(12):
 									*/
 								}
 							}
-		}
+						}
 #endif
-	}
-}
+				}
+			}
 		}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
