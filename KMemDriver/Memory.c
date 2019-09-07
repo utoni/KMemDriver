@@ -258,3 +258,44 @@ NTSTATUS KeRestoreProtectVirtualMemory(IN HANDLE hProcess,
 	}
 	return status;
 }
+
+NTSTATUS AllocMemoryToProcess(IN PEPROCESS pep, IN OUT PVOID *baseAddr, IN OUT SIZE_T *outSize, IN ULONG protect)
+{
+	NTSTATUS status;
+	PKAPC_STATE apc;
+
+	if (!baseAddr || !outSize) {
+		return STATUS_UNSUCCESSFUL;
+	}
+	apc = MmAllocateNonCachedMemory(sizeof(*apc));
+	if (!apc) {
+		return STATUS_UNSUCCESSFUL;
+	}
+	*outSize = ADDRESS_AND_SIZE_TO_SPAN_PAGES(*baseAddr, 4096);
+	KeStackAttachProcess((PRKPROCESS)pep, apc);
+	status = ZwAllocateVirtualMemory(ZwCurrentProcess(), baseAddr, 0, outSize, MEM_COMMIT, protect);
+	if (!NT_SUCCESS(status)) {
+		KDBG("ZwAllocateVirtualMemory failed with 0x%X\n", status);
+	}
+	KeUnstackDetachProcess(apc);
+	MmFreeNonCachedMemory(apc, sizeof(*apc));
+
+	return status;
+}
+
+NTSTATUS FreeMemoryFromProcess(IN PEPROCESS pep, IN PVOID baseAddr, IN SIZE_T size)
+{
+	NTSTATUS status;
+	PKAPC_STATE apc;
+
+	apc = MmAllocateNonCachedMemory(sizeof(*apc));
+	if (!apc) {
+		return STATUS_UNSUCCESSFUL;
+	}
+	KeStackAttachProcess((PRKPROCESS)pep, apc);
+	status = ZwFreeVirtualMemory(ZwCurrentProcess(), &baseAddr, &size, MEM_RELEASE);
+	KeUnstackDetachProcess(apc);
+	MmFreeNonCachedMemory(apc, sizeof(*apc));
+
+	return status;
+}

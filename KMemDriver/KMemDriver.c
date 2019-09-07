@@ -85,6 +85,17 @@ NTSTATUS KeRestoreProtectVirtualMemory(
 	IN PVOID addr, IN SIZE_T siz,
 	IN ULONG old_prot
 );
+NTSTATUS AllocMemoryToProcess(
+	IN PEPROCESS pep,
+	IN OUT PVOID *baseAddr,
+	IN OUT SIZE_T *outSize,
+	IN ULONG protect
+);
+NTSTATUS FreeMemoryFromProcess(
+	IN PEPROCESS pep,
+	IN PVOID baseAddr,
+	IN SIZE_T size
+);
 NTSTATUS GetDriverObject(
 	IN OUT PDRIVER_OBJECT *lpObj,
 	IN WCHAR* DriverDirName
@@ -122,6 +133,8 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
 #pragma alloc_text(PAGE, KeWriteVirtualMemory)
 #pragma alloc_text(PAGE, KeProtectVirtualMemory)
 #pragma alloc_text(PAGE, KeRestoreProtectVirtualMemory)
+#pragma alloc_text(PAGE, AllocMemoryToProcess)
+#pragma alloc_text(PAGE, FreeMemoryFromProcess)
 #pragma alloc_text(PAGE, GetDriverObject)
 #pragma alloc_text(PAGE, KRThread)
 #pragma alloc_text(PAGE, VADFindNodeOrParent)
@@ -642,29 +655,21 @@ NTSTATUS UpdatePPEPIfRequired(
 			}
 			else {
 				PEPROCESS pep = *lastPEP;
-				PVOID base = NULL;
-				SIZE_T size = ADDRESS_AND_SIZE_TO_SPAN_PAGES(base, 4096);
-				PKAPC_STATE apc = MmAllocateNonCachedMemory(sizeof(*apc));
-				KeStackAttachProcess((PRKPROCESS)pep, apc);
-				status = ZwAllocateVirtualMemory(ZwCurrentProcess(), &base, 0, &size, MEM_COMMIT, PAGE_READWRITE);
-				if (!NT_SUCCESS(status)) {
-					KDBG("ZwAllocateVirtualMemory failed with 0x%X\n", status);
+				PVOID addr = NULL;
+				SIZE_T size = 1024;
+				if (!NT_SUCCESS(AllocMemoryToProcess(pep, &addr, &size, PAGE_EXECUTE_READWRITE)))
+				{
+					KDBG("VAD Test Alloc failed: 0x%p\n", addr);
 				}
-				else {
-					*(UINT64 *)base = 0x4141414142424242;
-				}
-				KeUnstackDetachProcess(apc);
-				KDBG("VAD Test Alloc.: 0x%p (status: 0x%X)\n", base, status);
+
 				PMMVAD_SHORT mmvad;
-				status = VADFind(pep, (ULONG_PTR)base, &mmvad);
-				KDBG("VAD Test.......: 0x%p (status: 0x%X)\n", mmvad->StartingVpn, status);
-				KeStackAttachProcess((PRKPROCESS)pep, apc);
-				if (*(UINT64 *)base != 0x4141414142424242) {
-					KDBG("VAD Test failed: 0x%p != 0x%p\n", 0x4141414142424242, base);
+				status = VADFind(pep, (ULONG_PTR)addr, &mmvad);
+				KDBG("VAD Test.......: 0x%p -> 0x%p (status: 0x%X)\n", addr, mmvad->StartingVpn, status);
+
+				if (!NT_SUCCESS(FreeMemoryFromProcess(*lastPEP, addr, size)))
+				{
+					KDBG("VAD Test Free failed: 0x%p (status: 0x%X)\n", addr, status);
 				}
-				ZwFreeVirtualMemory(ZwCurrentProcess(), &base, &size, MEM_RELEASE);
-				KeUnstackDetachProcess(apc);
-				MmFreeNonCachedMemory(apc, sizeof(*apc));
 #if 0
 				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
 				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
