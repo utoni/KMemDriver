@@ -558,7 +558,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							siz = wr->SizeReq;
 						}
 						ULONG new_prot = PAGE_EXECUTE_READWRITE, old_prot = 0;
-						KeProtectVirtualMemory(lastPEP, wr->Address, wr->SizeReq, new_prot, &old_prot);
+						KeProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, new_prot, &old_prot);
 						KDBG("WPM to 0x%p size 0x%X bytes (protection before/after: 0x%X/0x%X)\n",
 							wr->Address, wr->SizeReq, old_prot, new_prot);
 						wr->StatusRes = KeWriteVirtualMemory(lastPEP, (PVOID)((ULONG_PTR)shm_buf + sizeof *wr),
@@ -654,10 +654,11 @@ NTSTATUS UpdatePPEPIfRequired(
 				KDBG("ObOpenObjectByPointer failed with 0x%X\n", status);
 			}
 			else {
+#if 0
 				PEPROCESS pep = *lastPEP;
 				PVOID addr = NULL;
 				SIZE_T size = 1024;
-				if (!NT_SUCCESS(AllocMemoryToProcess(pep, &addr, &size, PAGE_EXECUTE_READWRITE)))
+				if (!NT_SUCCESS(AllocMemoryToProcess(pep, &addr, &size, PAGE_EXECUTE_READ)))
 				{
 					KDBG("VAD Test Alloc failed: 0x%p\n", addr);
 				}
@@ -670,6 +671,7 @@ NTSTATUS UpdatePPEPIfRequired(
 				{
 					KDBG("VAD Test Free failed: 0x%p (status: 0x%X)\n", addr, status);
 				}
+#endif
 #if 0
 				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
 				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
