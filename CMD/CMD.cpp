@@ -9,31 +9,7 @@
 #include <windows.h>
 
 static BOOL running = false;
-static const wchar_t *wName = L"Counter-Strike: Global Offensive";
-
-typedef struct player_info_s
-{
-	__int64         unknown;            //0x0000 
-	union
-	{
-		__int64       steamID64;          //0x0008 - SteamID64
-		struct
-		{
-			__int32     xuid_low;
-			__int32     xuid_high;
-		};
-	};
-	char            szName[128];        //0x0010 - Player Name
-	int             userId;             //0x0090 - Unique Server Identifier
-	char            szSteamID[20];      //0x0094 - STEAM_X:Y:Z
-	char            pad_0x00A8[0x10];   //0x00A8
-	unsigned long   iSteamID;           //0x00B8 - SteamID 
-	char            szFriendsName[128];
-	bool            fakeplayer;
-	bool            ishltv;
-	unsigned int    customfiles[4];
-	unsigned char   filesdownloaded;
-} player_info_t;
+static const wchar_t *wName = L"desk"; /* name of the CMD windows */
 
 
 static bool consoleHandler(int signal) {
@@ -126,78 +102,27 @@ int wmain(int argc, wchar_t **argv)
 		<< std::hex << targetPID << std::endl;
 #endif
 
-	MODULE_DATA *engineDLL = NULL;
-	MODULE_DATA *clientDLL = NULL;
+	MODULE_DATA *dll = NULL;
 	for (MODULE_DATA& md : modules) {
-		if (strncmp(md.BaseDllName, "engine.dll", sizeof md.BaseDllName) == 0) {
+		if (strncmp(md.BaseDllName, "msvcrt.dll", sizeof md.BaseDllName) == 0) {
 			std::wcout << L"FOUND ENGINE DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
-			engineDLL = &md;
-		}
-		if (strncmp(md.BaseDllName, "client_panorama.dll", sizeof md.BaseDllName) == 0) {
-			std::wcout << L"FOUND CLIENT DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
-			clientDLL = &md;
+			dll = &md;
 		}
 	}
 
 	running = TRUE;
 	do {
-		if (engineDLL) {
-			/* unused */
-		}
+		if (dll) {
+			DWORD dwRData = 0x76000;
+			//DWORD dwRData = 0x8f000;
+			PVOID rdata = (PVOID)((ULONG_PTR)dll->DllBase + dwRData);
+			DWORD value = 0xDEADC0DE;
+			KMemory::Wpm<DWORD>(targetPID, rdata, &value);
+			value = 0x0;
+			value = KMemory::Rpm<DWORD>(targetPID, rdata);
+			std::cout << "Value: " << std::hex << value << std::endl;
 
-		if (clientDLL) {
-			DWORD dwLocalPlayer = 13580876;
-			PVOID localPlayerPtr = (PVOID)((ULONG_PTR)clientDLL->DllBase + dwLocalPlayer);
-			localPlayerPtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, localPlayerPtr));
-			std::wcout << L"localPlayerPtr..................: " << std::hex << localPlayerPtr << std::endl;
-
-			DWORD dwEntityList = 80763620;
-			PVOID entityListPtr = (PVOID)((ULONG_PTR)clientDLL->DllBase + dwEntityList);
-			std::wcout << L"client_panorama.dll+dwEntityList: " << std::hex << entityListPtr << std::endl;
-
-			for (size_t i = 0; i < 32; ++i) {
-				PVOID entityPtr = (PVOID)((ULONG_PTR)entityListPtr + (i * 0x10));
-				try {
-					entityPtr = (PVOID)((ULONG_PTR)KMemory::Rpm<DWORD>(targetPID, entityPtr));
-					if (!entityPtr) {
-						continue;
-					}
-				}
-				catch (std::runtime_error &) {
-					continue;
-				}
-
-				DWORD dwHealth = 256;
-				PVOID healthPtr = (PVOID)((ULONG_PTR)entityPtr + dwHealth);
-				DWORD health;
-				try {
-					health = KMemory::Rpm<DWORD>(targetPID, healthPtr);
-				}
-				catch (std::runtime_error &) {
-					continue;
-				}
-
-				std::wcout << L"entityPtr.......................: " << std::hex << entityPtr << " -> " << std::dec << health << std::endl;
-
-				DWORD dwSpotted = 2365;
-				PVOID spottedPtr = (PVOID)((ULONG_PTR)entityPtr + dwSpotted);
-				DWORD spotted = KMemory::Rpm<DWORD>(targetPID, spottedPtr);
-				DWORD dwSpottedBy = 2432;
-				PVOID spottedByPtr = (PVOID)((ULONG_PTR)entityPtr + dwSpottedBy);
-				DWORD spottedBy = KMemory::Rpm<DWORD>(targetPID, spottedByPtr);
-				if (spotted) {
-					spotted = 0;
-				}
-				else {
-					spotted = 1;
-					spottedBy |= 0xFF;
-					KMemory::Wpm<DWORD>(targetPID, spottedByPtr, &spottedBy);
-				}
-				KMemory::Wpm<DWORD>(targetPID, spottedPtr, &spotted);
-				//std::wcout << L"Sp: " << spotted << std::endl;
-			}
-
-			std::this_thread::sleep_for(std::chrono::microseconds(250000));
+			std::this_thread::sleep_for(std::chrono::microseconds(2500000));
 		}
 		else
 
