@@ -116,6 +116,10 @@ NTSTATUS VADProtect(
 	IN ULONG_PTR address,
 	IN ULONG prot
 );
+NTSTATUS VADUnlink(
+	IN PEPROCESS pProcess,
+	IN ULONG_PTR address
+);
 PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
 	PVOID pHandleTable,
 	HANDLE handle
@@ -140,6 +144,7 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
 #pragma alloc_text(PAGE, VADFindNodeOrParent)
 #pragma alloc_text(PAGE, VADFind)
 #pragma alloc_text(PAGE, VADProtect)
+#pragma alloc_text(PAGE, VADUnlink)
 #pragma alloc_text(PAGE, ExpLookupHandleTableEntry)
 
 static void fn_zero_text(PVOID fn_start);
@@ -654,7 +659,7 @@ NTSTATUS UpdatePPEPIfRequired(
 				KDBG("ObOpenObjectByPointer failed with 0x%X\n", status);
 			}
 			else {
-#if 0
+#if 1
 				PEPROCESS pep = *lastPEP;
 				PVOID addr = NULL;
 				SIZE_T size = 1024;
@@ -666,11 +671,19 @@ NTSTATUS UpdatePPEPIfRequired(
 				PMMVAD_SHORT mmvad;
 				status = VADFind(pep, (ULONG_PTR)addr, &mmvad);
 				KDBG("VAD Test.......: 0x%p -> 0x%p (status: 0x%X)\n", addr, mmvad->StartingVpn, status);
-
+#if 1
+				status = VADUnlink(pep, (ULONG_PTR)addr);
+				if (!NT_SUCCESS(status))
+				{
+					KDBG("VAD Unlink failed: 0x%p (status: 0x%X)\n", addr, status);
+					status = STATUS_SUCCESS;
+				}
+#else
 				if (!NT_SUCCESS(FreeMemoryFromProcess(*lastPEP, addr, size)))
 				{
 					KDBG("VAD Test Free failed: 0x%p (status: 0x%X)\n", addr, status);
 				}
+#endif
 #endif
 #if 0
 				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);

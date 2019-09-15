@@ -224,6 +224,91 @@ typedef struct _MMVAD_SHORT // Size=64
 	struct _MI_VAD_EVENT_BLOCK * EventList; // Size=8 Offset=56
 } MMVAD_SHORT, *PMMVAD_SHORT;
 
+struct _MMVAD_FLAGS2 // Size=4
+{
+	unsigned long FileOffset : 24; // Size=4 Offset=0 BitOffset=0 BitCount=24
+	unsigned long Large : 1; // Size=4 Offset=0 BitOffset=24 BitCount=1
+	unsigned long TrimBehind : 1; // Size=4 Offset=0 BitOffset=25 BitCount=1
+	unsigned long Inherit : 1; // Size=4 Offset=0 BitOffset=26 BitCount=1
+	unsigned long CopyOnWrite : 1; // Size=4 Offset=0 BitOffset=27 BitCount=1
+	unsigned long NoValidationNeeded : 1; // Size=4 Offset=0 BitOffset=28 BitCount=1
+	unsigned long Spare : 3; // Size=4 Offset=0 BitOffset=29 BitCount=3
+};
+
+struct _MI_VAD_SEQUENTIAL_INFO // Size=8
+{
+	unsigned __int64 Length : 12; // Size=8 Offset=0 BitOffset=0 BitCount=12
+	unsigned __int64 Vpn : 52; // Size=8 Offset=0 BitOffset=12 BitCount=52
+};
+
+union ___unnamed2047 // Size=4
+{
+	unsigned long LongFlags2; // Size=4 Offset=0
+	struct _MMVAD_FLAGS2 VadFlags2; // Size=4 Offset=0
+};
+
+union ___unnamed2048 // Size=8
+{
+	struct _MI_VAD_SEQUENTIAL_INFO SequentialVa; // Size=8 Offset=0
+	struct _MMEXTEND_INFO * ExtendedInfo; // Size=8 Offset=0
+};
+
+typedef union _EX_FAST_REF // Size=8
+{
+	void * Object;
+	struct
+	{
+		unsigned __int64 RefCnt : 4;
+	};
+	unsigned __int64 Value;
+} EX_FAST_REF, *PEX_FAST_REF;
+
+typedef struct _CONTROL_AREA // Size=120
+{
+	struct _SEGMENT * Segment;
+	struct _LIST_ENTRY ListHead;
+	unsigned __int64 NumberOfSectionReferences;
+	unsigned __int64 NumberOfPfnReferences;
+	unsigned __int64 NumberOfMappedViews;
+	unsigned __int64 NumberOfUserReferences;
+	unsigned long f1;
+	unsigned long f2;
+	EX_FAST_REF FilePointer;
+	// Other fields
+} CONTROL_AREA, *PCONTROL_AREA;
+
+typedef struct _SUBSECTION // Size=56
+{
+	PCONTROL_AREA ControlArea;
+	// Other fields
+} SUBSECTION, *PSUBSECTION;
+
+typedef struct _MMVAD // Size=128
+{
+	struct _MMVAD_SHORT Core; // Size=64 Offset=0
+	union ___unnamed2047 u2; // Size=4 Offset=64
+	unsigned long pad0;  // Size=4 Offset=68
+	struct _SUBSECTION * Subsection; // Size=8 Offset=72
+	struct _MMPTE * FirstPrototypePte; // Size=8 Offset=80
+	struct _MMPTE * LastContiguousPte; // Size=8 Offset=88
+	struct _LIST_ENTRY ViewLinks; // Size=16 Offset=96
+	struct _EPROCESS * VadsProcess; // Size=8 Offset=112
+	union ___unnamed2048 u4; // Size=8 Offset=120
+	struct _FILE_OBJECT * FileObject; // Size=8 Offset=128
+} MMVAD, *PMMVAD;
+
+typedef enum _MI_VAD_TYPE
+{
+	VadNone,
+	VadDevicePhysicalMemory,
+	VadImageMap,
+	VadAwe,
+	VadWriteWatch,
+	VadLargePages,
+	VadRotatePhysical,
+	VadLargePageSection
+} MI_VAD_TYPE, *PMI_VAD_TYPE;
+
 typedef struct _RTL_AVL_TREE // Size=8
 {
 	PMM_AVL_NODE BalancedRoot;

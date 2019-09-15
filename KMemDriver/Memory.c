@@ -41,10 +41,11 @@ NTSTATUS GetPages(
 			break;
 		}
 		else {
-			for (i = 0; i < mbiLength; ++i)
-				KDBG("Page #%03u: base -> 0x%p, prot -> 0x%02X, size -> 0x%X\n",
-				(*mbiUsed) + i, (*(mbiArr + i)).BaseAddress, (*(mbiArr + i)).Protect,
-					(*(mbiArr + i)).RegionSize);
+			for (i = 0; i < mbiLength; ++i) {
+				//KDBG("Page #%03u: base -> 0x%p, prot -> 0x%02X, size -> 0x%X\n",
+				//     (*mbiUsed) + i, (*(mbiArr + i)).BaseAddress, (*(mbiArr + i)).Protect,
+				//     (*(mbiArr + i)).RegionSize);
+			}
 		}
 		baseAddr += (SIZE_T)(mbiArr + mbiLength - 1)->RegionSize;
 		*mbiUsed += mbiLength;
@@ -113,8 +114,8 @@ NTSTATUS GetModules(
 			}
 			pmod->DllBase = (PVOID)ldrEntry32->DllBase;
 			pmod->SizeOfImage = ldrEntry32->SizeOfImage;
-			KDBG("DLL32 #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
-				pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
+			//KDBG("DLL32 #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
+			//     pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
 		}
 	}
 	else {
@@ -161,8 +162,8 @@ NTSTATUS GetModules(
 			}
 			pmod->DllBase = ldrEntry->DllBase;
 			pmod->SizeOfImage = ldrEntry->SizeOfImage;
-			KDBG("DLL #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
-				pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
+			//KDBG("DLL #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
+			//     pmod->DllBase, pmod->SizeOfImage, pmod->BaseDllName);
 		}
 	}
 

@@ -5,6 +5,9 @@
 #include <ntddk.h>
 #include <Ntstrsafe.h>
 
+#define MM_ZERO_ACCESS         0
+
+
 TABLE_SEARCH_RESULT
 VADFindNodeOrParent(
 	IN PMM_AVL_TABLE Table,
@@ -128,6 +131,40 @@ NTSTATUS VADProtect(
 	status = VADFind(pProcess, address, &pVadShort);
 	if (NT_SUCCESS(status))
 		pVadShort->u.VadFlags.Protection = prot;
+
+	return status;
+}
+
+NTSTATUS VADUnlink(IN PEPROCESS pProcess, IN ULONG_PTR address)
+{
+	NTSTATUS status = STATUS_SUCCESS;
+	PMMVAD_SHORT pVadShort = NULL;
+
+	status = VADFind(pProcess, address, &pVadShort);
+	if (!NT_SUCCESS(status))
+		return status;
+
+	// Erase image name
+	if (pVadShort->u.VadFlags.VadType == VadImageMap)
+	{
+		PMMVAD pVadLong = (PMMVAD)pVadShort;
+		if (pVadLong->Subsection && pVadLong->Subsection->ControlArea && pVadLong->Subsection->ControlArea->FilePointer.Object)
+		{
+			PFILE_OBJECT pFile = (PFILE_OBJECT)(pVadLong->Subsection->ControlArea->FilePointer.Value & ~0xF);
+			pFile->FileName.Buffer[0] = L'\0';
+			pFile->FileName.Length = 0;
+		}
+		else
+			return STATUS_INVALID_ADDRESS;
+	}
+	// Make NO_ACCESS
+	else if (pVadShort->u.VadFlags.VadType == VadDevicePhysicalMemory)
+	{
+		pVadShort->u.VadFlags.Protection = MM_ZERO_ACCESS;
+	}
+	// Invalid VAD type
+	else
+		status = STATUS_INVALID_PARAMETER;
 
 	return status;
 }
