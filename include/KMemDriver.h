@@ -25,9 +25,9 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define MEM_PAGES				0x803
 #define MEM_RPM					0x804
 #define MEM_WPM					0x805
-#define MEM_ALLOC               0x806
-#define MEM_FREE                0x807
-#define MEM_UNLINK              0x808
+#define MEM_VALLOC               0x806
+#define MEM_VFREE                0x807
+#define MEM_VUNLINK              0x808
 #define MEM_EXIT				0x809
 
 typedef struct _KERNEL_HEADER
@@ -106,7 +106,7 @@ typedef struct _KERNEL_WRITE_REQUEST
 	SIZE_T SizeRes;
 } KERNEL_WRITE_REQUEST, *PKERNEL_WRITE_REQUEST;
 
-typedef struct _KERNEL_ALLOC_REQUEST
+typedef struct _KERNEL_VALLOC_REQUEST
 {
 	KERNEL_HEADER hdr;
 	HANDLE ProcessId;
@@ -117,9 +117,9 @@ typedef struct _KERNEL_ALLOC_REQUEST
 	NTSTATUS StatusRes;
 	PVOID AddressRes;
 	SIZE_T SizeRes;
-} KERNEL_ALLOC_REQUEST, *PKERNEL_ALLOC_REQUEST;
+} KERNEL_VALLOC_REQUEST, *PKERNEL_VALLOC_REQUEST;
 
-typedef struct _KERNEL_FREE_REQUEST
+typedef struct _KERNEL_VFREE_REQUEST
 {
 	KERNEL_HEADER hdr;
 	HANDLE ProcessId;
@@ -127,16 +127,16 @@ typedef struct _KERNEL_FREE_REQUEST
 	SIZE_T Size;
 
 	NTSTATUS StatusRes;
-} KERNEL_FREE_REQUEST, *PKERNEL_FREE_REQUEST;
+} KERNEL_VFREE_REQUEST, *PKERNEL_VFREE_REQUEST;
 
-typedef struct _KERNEL_UNLINK_REQUEST
+typedef struct _KERNEL_VUNLINK_REQUEST
 {
 	KERNEL_HEADER hdr;
 	HANDLE ProcessId;
 	PVOID Address;
 
 	NTSTATUS StatusRes;
-} KERNEL_UNLINK_REQUEST, *PKERNEL_UNLINK_REQUEST;
+} KERNEL_VUNLINK_REQUEST, *PKERNEL_VUNLINK_REQUEST;
 
 
 #ifndef KERNEL_MODULE
@@ -166,9 +166,9 @@ validateRequest
 	case MEM_MODULES:
 	case MEM_RPM:
 	case MEM_WPM:
-	case MEM_ALLOC:
-	case MEM_FREE:
-	case MEM_UNLINK:
+	case MEM_VALLOC:
+	case MEM_VFREE:
+	case MEM_VUNLINK:
 	case MEM_EXIT:
 		return hdr->type;
 	default:

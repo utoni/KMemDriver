@@ -580,6 +580,11 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeWriteVirtualMemory(ctrlPEP, wr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
+					case MEM_VALLOC:
+					case MEM_VFREE:
+					case MEM_VUNLINK:
+						KDBG("Not Implemented request ..\n");
+						break;
 					case MEM_EXIT:
 						KDBG("Gracefully exiting ..\n");
 						KeClearEvent(pk_kevent);
