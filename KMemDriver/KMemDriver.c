@@ -465,6 +465,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KDBG("Got a PING with rng 0x%X, sending PONG !\n",
 							ping->rnd_user);
 						ping->rnd_kern = ping->rnd_user;
+
 						siz = sizeof *ping;
 						KeWriteVirtualMemory(ctrlPEP, ping, (PVOID)SHMEM_ADDR, &siz);
 						break;
@@ -483,6 +484,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							/ sizeof pages->pages_start;
 						pages->StatusRes = GetPages(lastPEP, &pages->pages_start, siz,
 							&pages->pages, pages->StartAddress);
+
 						siz = (sizeof *pages - sizeof pages->pages_start) +
 							sizeof pages->pages_start * pages->pages;
 						KeWriteVirtualMemory(ctrlPEP, pages, (PVOID)SHMEM_ADDR, &siz);
@@ -507,6 +509,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							PsGetProcessWow64Process(lastPEP) != NULL);
 						KeUnstackDetachProcess(&apcstate);
 						mods->modules = siz;
+
 						siz = (sizeof *mods - sizeof mods->modules_start) +
 							sizeof mods->modules_start * mods->modules;
 						KeWriteVirtualMemory(ctrlPEP, mods, (PVOID)SHMEM_ADDR, &siz);
@@ -535,6 +538,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						rr->StatusRes = KeReadVirtualMemory(lastPEP, (PVOID)rr->Address,
 							(PVOID)((ULONG_PTR)shm_buf + sizeof *rr), &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, rr->Address, rr->SizeReq, old_prot);
+
 						if (NT_SUCCESS(rr->StatusRes)) {
 							rr->SizeRes = siz;
 							siz += sizeof *rr;
@@ -569,6 +573,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						wr->StatusRes = KeWriteVirtualMemory(lastPEP, (PVOID)((ULONG_PTR)shm_buf + sizeof *wr),
 							(PVOID)wr->Address, &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, old_prot);
+
 						if (NT_SUCCESS(wr->StatusRes)) {
 							wr->SizeRes = siz;
 							siz += sizeof *wr;
@@ -580,7 +585,24 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeWriteVirtualMemory(ctrlPEP, wr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
-					case MEM_VALLOC:
+					case MEM_VALLOC: {
+						PKERNEL_VALLOC_REQUEST vr = (PKERNEL_VALLOC_REQUEST)shm_buf;
+						KDBG("Got a VALLOC to process 0x%X, address 0x%p with size 0x%lX and protection 0x%lX\n",
+							vr->ProcessId, vr->AddressReq, vr->SizeReq, vr->Protection);
+						if (!NT_SUCCESS(UpdatePPEPIfRequired(vr->ProcessId,
+							lastPID, &lastPROC, &lastPEP)))
+						{
+							running = 0;
+							break;
+						}
+						vr->SizeRes = vr->SizeReq;
+						vr->AddressRes = vr->AddressReq;
+						vr->StatusRes = AllocMemoryToProcess(lastPEP, &vr->AddressRes, &vr->SizeRes, vr->Protection);
+
+						siz = sizeof *vr;
+						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
+						break;
+					}
 					case MEM_VFREE:
 					case MEM_VUNLINK:
 						KDBG("Not Implemented request ..\n");
