@@ -162,9 +162,9 @@ NTSTATUS VADUnlink(IN PEPROCESS pProcess, IN ULONG_PTR address)
 	{
 		pVadShort->u.VadFlags.Protection = MM_ZERO_ACCESS;
 	}
-	// Invalid VAD type
-	else
-		status = STATUS_INVALID_PARAMETER;
+	else {
+		RtlAvlRemoveNode((PMM_AVL_TABLE)((PUCHAR)pProcess + VAD_TREE_1803), (PMMADDRESS_NODE)pVadShort);
+	}
 
 	return status;
 }
