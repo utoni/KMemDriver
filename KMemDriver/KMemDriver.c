@@ -713,47 +713,6 @@ NTSTATUS UpdatePPEPIfRequired(
 			if (!NT_SUCCESS(status)) {
 				KDBG("ObOpenObjectByPointer failed with 0x%X\n", status);
 			}
-			else {
-#if 1
-				PEPROCESS pep = *lastPEP;
-				PVOID addr = NULL;
-				SIZE_T size = 1024;
-				if (!NT_SUCCESS(AllocMemoryToProcess(pep, &addr, &size, PAGE_EXECUTE_READ)))
-				{
-					KDBG("VAD Test Alloc failed: 0x%p\n", addr);
-				}
-
-				PMMVAD_SHORT mmvad;
-				status = VADFind(pep, (ULONG_PTR)addr, &mmvad);
-				KDBG("VAD Test.......: 0x%p -> 0x%p (status: 0x%X)\n", addr, mmvad->StartingVpn, status);
-#if 1
-				status = VADUnlink(pep, (ULONG_PTR)addr);
-				if (!NT_SUCCESS(status))
-				{
-					KDBG("VAD Unlink failed: 0x%p (status: 0x%X)\n", addr, status);
-					status = STATUS_SUCCESS;
-				}
-#else
-				if (!NT_SUCCESS(FreeMemoryFromProcess(*lastPEP, addr, size)))
-				{
-					KDBG("VAD Test Free failed: 0x%p (status: 0x%X)\n", addr, status);
-				}
-#endif
-#endif
-#if 0
-				PMM_AVL_TABLE avltable = (PMM_AVL_TABLE)((ULONG_PTR *)pep + VAD_TREE_1803);
-				KDBG("VAD-ROOT.....: 0x%p\n", GET_VAD_ROOT(avltable));
-				KDBG("NODE-HINT....: 0x%p\n", avltable->NodeHint);
-				KDBG("NMBR-OF-ELEMs: %d\n", avltable->NumberGenericTableElements);
-				KDBG("FLAGS........: 0x%p\n", *((UINT32 *)pep + 0x304));
-				KDBG("VSIZE........: %d\n", *((UINT64 *)pep + 0x338));
-				KDBG("IMAGEFILENAME: %.*s\n", 15, ((const char *)pep + 0x450));
-#endif
-#if 0
-				PVOID handleTable = (PVOID)((ULONG_PTR)pep + 0x418);
-				KDBG("lastPROC HandleTableEntry: %p\n", ExpLookupHandleTableEntry(handleTable, *lastPROC));
-#endif
-			}
 		}
 	}
 	return status;
@@ -798,7 +757,7 @@ NTSTATUS GetDriverObject(
 	}
 
 	return status;
-}
+		}
 
 PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
 {
