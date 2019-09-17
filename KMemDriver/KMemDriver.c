@@ -603,10 +603,26 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
-					case MEM_VFREE:
-					case MEM_VUNLINK:
+					case MEM_VFREE: {
+						PKERNEL_VFREE_REQUEST vr = (PKERNEL_VFREE_REQUEST)shm_buf;
+						KDBG("Got a VFREE to process 0x%X, address 0x%p with size 0x%lX\n",
+							vr->ProcessId, vr->Address, vr->Size);
+						if (!NT_SUCCESS(UpdatePPEPIfRequired(vr->ProcessId,
+							lastPID, &lastPROC, &lastPEP)))
+						{
+							running = 0;
+							break;
+						}
+						vr->StatusRes = FreeMemoryFromProcess(lastPEP, vr->Address, vr->Size);
+
+						siz = sizeof *vr;
+						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
+						break;
+					}
+					case MEM_VUNLINK: {
 						KDBG("Not Implemented request ..\n");
 						break;
+					}
 					case MEM_EXIT:
 						KDBG("Gracefully exiting ..\n");
 						KeClearEvent(pk_kevent);
@@ -709,7 +725,7 @@ NTSTATUS UpdatePPEPIfRequired(
 				if (!NT_SUCCESS(FreeMemoryFromProcess(*lastPEP, addr, size)))
 				{
 					KDBG("VAD Test Free failed: 0x%p (status: 0x%X)\n", addr, status);
-				}
+			}
 #endif
 #endif
 #if 0
@@ -725,9 +741,9 @@ NTSTATUS UpdatePPEPIfRequired(
 				PVOID handleTable = (PVOID)((ULONG_PTR)pep + 0x418);
 				KDBG("lastPROC HandleTableEntry: %p\n", ExpLookupHandleTableEntry(handleTable, *lastPROC));
 #endif
-			}
 		}
 	}
+}
 	return status;
 }
 
