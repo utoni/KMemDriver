@@ -282,15 +282,35 @@ class Vec3_tpl<float>   size(12):
 							UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
 								(PVOID)((UINT64)md.DllBase + 0x28C3F8));
 							std::wcout << L"g_pEnv..............: 0x" << WHEXOUT << g_pEnv << std::endl;
-
+#if 0
 							// ?? ?? ?? ?? ?? ?? 85 C0 0F 84 5E 02 00 00
 							BYTE aa[] = { 0x90, 0x90, 0x90, 0x90, 0x31, 0xC0 };
 							KMemoryBuf::Wpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &aa[0]);
 							BYTE bb[sizeof aa] = {};
 							KMemoryBuf::Rpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &bb[0]);
 							printBuf(bb, sizeof bb, 32);
-
-
+#else
+							static bool first = true;
+							if (first) {
+								first = false;
+								PVOID targetAddr = (PVOID)((UINT64)NULL);
+								SIZE_T targetSize = 4096;
+								if (!ki.VAlloc(targetPID, &targetAddr, &targetSize, PAGE_EXECUTE_READWRITE)) {
+									std::wcout << L"VAlloc failed" << std::endl;
+								}
+								if (!ki.VUnlink(targetPID, targetAddr)) {
+									std::wcout << L"VUnlink failed" << std::endl;
+								}
+								std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
+								BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0xeb, 0xfd };
+								printBuf(cc, sizeof cc, 32);
+								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
+								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
+								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
+								printBuf(dd, sizeof dd, 32);
+								KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
+							}
+#endif
 
 							UINT64 m_idForced = KMemory::Rpm<UINT64>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 786970));
