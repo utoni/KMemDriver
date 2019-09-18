@@ -198,6 +198,86 @@ bool KInterface::WPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
 	return false;
 }
 
+bool KInterface::VAlloc(HANDLE targetPID, PVOID *address, SIZE_T *size, ULONG protection)
+{
+	PKERNEL_VALLOC_REQUEST vr = (PKERNEL_VALLOC_REQUEST)getBuffer();
+	m_last_ntstatus = INVALID_NTSTATUS;
+	vr->ProcessId = targetPID;
+	vr->AddressReq = *address;
+	vr->SizeReq = *size;
+	vr->Protection = protection;
+	vr->AddressRes = NULL;
+	vr->SizeRes = (SIZE_T)-1;
+	vr->StatusRes = (NTSTATUS)-1;
+	if (SendRecvWait(MEM_VALLOC) == SRR_SIGNALED) {
+		m_last_ntstatus = vr->StatusRes;
+		if (vr->StatusRes ||
+			vr->SizeRes != *size)
+		{
+			std::stringstream err_str;
+			err_str << "Call VAlloc(0x" << std::hex << *address
+				<< "," << std::dec << *size
+				<< ") failed with 0x"
+				<< std::hex << vr->StatusRes
+				<< " (Size Req/Res: "
+				<< std::dec << vr->SizeReq << "/" << (SSIZE_T)vr->SizeRes
+				<< ")";
+			throw std::runtime_error(err_str.str());
+		}
+		*address = vr->AddressRes;
+		*size = vr->SizeRes;
+		return true;
+	}
+	return false;
+}
+
+bool KInterface::VFree(HANDLE targetPID, PVOID address, SIZE_T size)
+{
+	PKERNEL_VFREE_REQUEST vr = (PKERNEL_VFREE_REQUEST)getBuffer();
+	m_last_ntstatus = INVALID_NTSTATUS;
+	vr->ProcessId = targetPID;
+	vr->Address = address;
+	vr->Size = size;
+	vr->StatusRes = (NTSTATUS)-1;
+	if (SendRecvWait(MEM_VFREE) == SRR_SIGNALED) {
+		m_last_ntstatus = vr->StatusRes;
+		if (vr->StatusRes)
+		{
+			std::stringstream err_str;
+			err_str << "Call VFree(0x" << std::hex << address
+				<< "," << std::dec << size
+				<< ") failed with 0x"
+				<< std::hex << vr->StatusRes
+				<< " with size " << std::dec << vr->Size;
+			throw std::runtime_error(err_str.str());
+		}
+		return true;
+	}
+	return false;
+}
+
+bool KInterface::VUnlink(HANDLE targetPID, PVOID address)
+{
+	PKERNEL_VUNLINK_REQUEST vr = (PKERNEL_VUNLINK_REQUEST)getBuffer();
+	m_last_ntstatus = INVALID_NTSTATUS;
+	vr->ProcessId = targetPID;
+	vr->Address = address;
+	vr->StatusRes = (NTSTATUS)-1;
+	if (SendRecvWait(MEM_VUNLINK) == SRR_SIGNALED) {
+		m_last_ntstatus = vr->StatusRes;
+		if (vr->StatusRes)
+		{
+			std::stringstream err_str;
+			err_str << "Call VUnlink(0x" << std::hex << address
+				<< ") failed with 0x"
+				<< std::hex << vr->StatusRes;
+			throw std::runtime_error(err_str.str());
+		}
+		return true;
+	}
+	return false;
+}
+
 PVOID KInterface::getBuffer() {
 	if (!m_shmem)
 		throw std::runtime_error("Call Init() before..");

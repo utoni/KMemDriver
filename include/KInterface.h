@@ -37,6 +37,9 @@ public:
 		PKERNEL_READ_REQUEST result);
 	bool WPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
 		PKERNEL_WRITE_REQUEST result);
+	bool VAlloc(HANDLE targetPID, PVOID *address, SIZE_T *size, ULONG protection);
+	bool VFree(HANDLE targetPID, PVOID address, SIZE_T size);
+	bool VUnlink(HANDLE targetPID, PVOID address);
 
 	PVOID getBuffer();
 	HANDLE getKHandle();
