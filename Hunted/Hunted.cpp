@@ -137,15 +137,21 @@ int wmain(int argc, wchar_t **argv)
 					if (!strncmp(md.BaseDllName, "CrySystem.dll",
 						sizeof md.BaseDllName))
 					{
+#if 0
 						std::wcout << L"CrySystem.dll.......: 0x" << WHEXOUT << md.DllBase << std::endl;
 						UINT32 tmp = 0xDEADBEEF;
-						KMemory::Wpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x563000), &tmp);
+						KMemory::Wpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x566800), &tmp);
+						std::wcout << L"RDATA...............: 0x" << WHEXOUT << KMemory::Rpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x566800)) << std::endl;
+						KMemory::Wpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x1800), &tmp);
+						std::wcout << L"TEXT................: 0x" << WHEXOUT << KMemory::Rpm<UINT32>(targetPID, (PVOID)((UINT64)md.DllBase + 0x1800)) << std::endl;
+#endif
 					}
 					else
 						if (!strncmp(md.BaseDllName, "CryEntitySystem.dll",
 							sizeof md.BaseDllName))
 						{
 							std::wcout << L"CryEntitySystem.dll.: 0x" << std::hex << md.DllBase << std::endl;
+
 							/* "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutCEntitySystem C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryEntitySystem\EntitySystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" */
 /*
 
@@ -274,8 +280,17 @@ class Vec3_tpl<float>   size(12):
 #if 1
 /* Found: void CEntitySystem::LoadInternalState(IDataReadStream& reader) */
 							UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
-								(PVOID)((UINT64)md.DllBase + 0x28C3F0));
+								(PVOID)((UINT64)md.DllBase + 0x28C3F8));
 							std::wcout << L"g_pEnv..............: 0x" << WHEXOUT << g_pEnv << std::endl;
+
+							// ?? ?? ?? ?? ?? ?? 85 C0 0F 84 5E 02 00 00
+							BYTE aa[] = { 0x90, 0x90, 0x90, 0x90, 0x31, 0xC0 };
+							KMemoryBuf::Wpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &aa[0]);
+							BYTE bb[sizeof aa] = {};
+							KMemoryBuf::Rpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &bb[0]);
+							printBuf(bb, sizeof bb, 32);
+
+
 
 							UINT64 m_idForced = KMemory::Rpm<UINT64>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 786970));
@@ -292,9 +307,10 @@ class Vec3_tpl<float>   size(12):
 							UINT16 m_maxUsedEntityIndex = KMemory::Rpm<UINT16>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 112 + 262138));
 							std::wcout << L"m_maxUsedEntityIndex: 0x" << WHEXOUT << m_maxUsedEntityIndex << std::endl;
-
-							UINT64 startOffsetMaxUsedEntities = (m_maxUsedEntityIndex < m_freeListStartIndex ? m_maxUsedEntityIndex : m_freeListStartIndex) * sizeof(PVOID);
-							startOffsetMaxUsedEntities -= 50 * sizeof(PVOID);
+#if 0
+							//UINT64 startOffsetMaxUsedEntities = (m_maxUsedEntityIndex < m_freeListStartIndex ? m_maxUsedEntityIndex : m_freeListStartIndex) * sizeof(PVOID);
+							UINT64 startOffsetMaxUsedEntities = m_freeListStartIndex * sizeof(PVOID);
+							//startOffsetMaxUsedEntities -= 50 * sizeof(PVOID);
 							std::array<PVOID, 1024> entities;
 							if (KInterface::getInstance().RPM(targetPID, (PVOID)((UINT64)g_pEnv + 112 + 262140 + 12 + startOffsetMaxUsedEntities), (BYTE*)&entities, sizeof entities, NULL)) {
 								for (PVOID ent : entities) {
@@ -321,7 +337,7 @@ class Vec3_tpl<float>   size(12):
 										}
 
 										//if ((flags & 0x2000 /* ENTITY_FLAG_HAS_AI */) == 0 && (flags & 0x8000 /* ENTITY_FLAG_CAMERA_SOURCE */) == 0) {
-#if 0
+#if 1
 										std::cout << "Name Ptr: " << std::hex << name_str
 											<< ", id: " << std::setw(8) << std::hex << (UINT32)id
 											<< ", flags: " << std::setw(8) << std::hex << (UINT32)flags
@@ -341,6 +357,7 @@ class Vec3_tpl<float>   size(12):
 								}
 							}
 							else std::wcerr << "Get EntityArray failed" << std::endl;
+#endif
 #if 0
 							BYTE tmp[sizeof SSystemGlobalEnvironment * 2] = { 0 };
 							SSIZE_T siz = KMemoryBuf::Rpm<sizeof tmp>(targetPID, (PVOID)(g_pEnv), tmp);
