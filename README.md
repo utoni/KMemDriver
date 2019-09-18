@@ -1,6 +1,7 @@
 # What?
 *KMemDriver* is a **Windows 10 x64 driver** designed to manipulate memory (and more)
 from ring0. It is also possible to bypass existing ring0/ring3 AntiCheat solutions e.g. BE and EAC.
+It can also be used to manual map a user space DLL to a protected process and hide its occupied memory pages.
 
 
 # Dependencies
@@ -17,7 +18,19 @@ The recommended way to install all dependencies is through [vs_community.exe](ht
 
 # HowTo
 *KMemDriver* was designed work together with *PastDSE* as injector.
-*KMemDriver* supports manual mapping.
+*KMemDriver* supports manual mapping in terms as it does not use any kernel symbol (with 1 exception) that require a legit loaded driver.
+
+
+# Features
+- communicates to the user space controller program via own written shared memory alike mechanism
+- uses Windows events for the kernel space and user space as synchronization
+- read all mapped memory pages of a process
+- read all mapped modules of process
+- read memory of a process (bypass page protections)
+- write memory to a process (bypass page protections)
+- allocate memory with specified page protection to a process
+- free memory of a process
+- unlink memory from VAD of a process
 
 
 # Contributors
