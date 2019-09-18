@@ -122,6 +122,25 @@ int wmain(int argc, wchar_t **argv)
 			value = KMemory::Rpm<DWORD>(targetPID, rdata);
 			std::cout << "Value: " << std::hex << value << std::endl;
 
+			PVOID targetAddr = (PVOID)((UINT64)NULL);
+			SIZE_T targetSize = 4096;
+			try {
+				if (!ki.VAlloc(targetPID, &targetAddr, &targetSize, PAGE_EXECUTE_READWRITE)) {
+					std::wcout << L"VAlloc failed" << std::endl;
+				}
+#if 0
+				if (!ki.VUnlink(targetPID, targetAddr)) {
+					std::wcout << L"VUnlink failed" << std::endl;
+				}
+#endif
+				if (!ki.VFree(targetPID, targetAddr, targetSize)) {
+					std::wcout << L"VFree failed" << std::endl;
+				}
+			}
+			catch (std::runtime_error& err) {
+				std::wcout << err.what() << std::endl;
+			}
+
 			std::this_thread::sleep_for(std::chrono::microseconds(2500000));
 		}
 		else
