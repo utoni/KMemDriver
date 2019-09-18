@@ -302,9 +302,16 @@ class Vec3_tpl<float>   size(12):
 									std::wcout << L"VUnlink failed" << std::endl;
 								}
 								std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
-								BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0xeb, 0xfd };
+								//BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0xeb, 0xfd };
+								BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90,
+											  0x48, 0xB8,
+											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+											  0xFF, 0xE0 };
+								UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
+								*(UINT64 *)((BYTE *)cc + 7) = jumpBackAddr;
 								printBuf(cc, sizeof cc, 32);
 								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
+
 								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 								printBuf(dd, sizeof dd, 32);
@@ -445,7 +452,7 @@ class Vec3_tpl<float>   size(12):
 										<< L": ";
 									printBuf((UCHAR *)((ULONG_PTR)(diff.current_buffer) + e.first), e.second, e.second);
 								}
-							}
+						}
 #endif
 #if 0
 #if 1
@@ -472,7 +479,7 @@ class Vec3_tpl<float>   size(12):
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
-							}
+				}
 #endif
 #endif
 						}
@@ -486,7 +493,7 @@ class Vec3_tpl<float>   size(12):
 								(PVOID)((ULONGLONG)md.DllBase + /* 0x19F0F0 */ 0x5EA9DC));
 							std::wcout << L"Display.........: " << std::dec << displayWidth
 								<< " x " << displayHeight << std::endl;
-						}
+			}
 #endif
 #if 0
 						else if (!strncmp(md.BaseDllName, "ntdll.dll",
@@ -516,10 +523,10 @@ class Vec3_tpl<float>   size(12):
 									*/
 								}
 							}
-						}
+		}
 #endif
-				}
-			}
+	}
+}
 		}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
