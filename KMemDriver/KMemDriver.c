@@ -598,6 +598,11 @@ NTSTATUS KRThread(IN PVOID pArg)
 						vr->SizeRes = vr->SizeReq;
 						vr->AddressRes = vr->AddressReq;
 						vr->StatusRes = AllocMemoryToProcess(lastPEP, &vr->AddressRes, &vr->SizeRes, vr->Protection);
+						if (NT_SUCCESS(vr->StatusRes) &&
+							(vr->AddressReq != vr->AddressRes || vr->SizeReq != vr->StatusRes))
+						{
+							KDBG("System changed VALLOC address to 0x%p and size 0x%lX\n", vr->AddressRes, vr->SizeRes);
+						}
 
 						siz = sizeof *vr;
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
