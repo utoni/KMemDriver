@@ -312,6 +312,8 @@ class Vec3_tpl<float>   size(12):
 								printBuf(cc, sizeof cc, 32);
 								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
 
+								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
+
 								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 								printBuf(dd, sizeof dd, 32);
