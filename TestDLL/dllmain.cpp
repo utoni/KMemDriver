@@ -15,6 +15,14 @@ BOOL APIENTRY DllMain(HMODULE hModule,
 		break;
 	}
 
+	static bool bShowMessage = true;
+	if (bShowMessage) {
+		bShowMessage = false;
+	}
+	else {
+		return true;
+	}
+
 	return MessageBoxA(NULL,
 		"DllMain from TestDLL",
 		"TestDLL Notification",
