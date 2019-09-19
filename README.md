@@ -21,6 +21,13 @@ The recommended way to install all dependencies is through [vs_community.exe](ht
 *KMemDriver* supports manual mapping in terms as it does not use any kernel symbol (with 1 exception) that require a legit loaded driver.
 
 
+# Tests
+To make sure that KMemDriver works as expected you can run two different kind of tests to verify it for your OS.
+There are two different kind of tests:
+- integration test (TODO)
+- stress test (TODO)
+
+
 # Features
 - communicates to the user space controller program via own written shared memory alike mechanism
 - uses Windows events for the kernel space and user space as synchronization
@@ -34,4 +41,4 @@ The recommended way to install all dependencies is through [vs_community.exe](ht
 
 
 # Contributors
-As you can see, I've used some slightly modified code from [BlackBone](https://github.com/DarthTon/Blackbone) for VAD routines.
+As you can see, I've used some slightly modified code from [BlackBone](https://github.com/DarthTon/Blackbone) for VAD routines and manual DLL mapping.
