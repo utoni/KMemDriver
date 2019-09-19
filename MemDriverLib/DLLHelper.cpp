@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "DLLHelper.h"
+#include "KInterface.h"
 
 #include <sstream>
 #include <Windows.h>
@@ -21,7 +22,11 @@ DLLHelper::~DLLHelper()
 	}
 }
 
-bool DLLHelper::Init(std::string& fullDllPath) {
+bool DLLHelper::Init(HANDLE targetPID, std::string& fullDllPath) {
+	if (!targetPID) {
+		return false;
+	}
+	m_TargetPID = targetPID;
 	m_DLLPath = fullDllPath;
 
 	HANDLE hFile = CreateFileA(m_DLLPath.c_str(),
@@ -83,6 +88,25 @@ bool DLLHelper::VerifyHeader()
 	if (m_NTHeader->Signature != IMAGE_NT_SIGNATURE)
 	{
 		delete m_DLLPtr;
+		return false;
+	}
+
+	return true;
+}
+
+bool DLLHelper::InitTargetMemory()
+{
+	if (!m_DLLPtr || !m_DLLSize) {
+		return false;
+	}
+
+	PVOID wantedBaseAddr = m_TargetBaseAddress;
+	SIZE_T wantedSize = m_DLLSize;
+	KInterface& ki = KInterface::getInstance();
+	if (!ki.VAlloc(m_TargetPID, &wantedBaseAddr, &wantedSize, PAGE_EXECUTE_READWRITE)) {
+		return false;
+	}
+	if (wantedSize != m_DLLSize) {
 		return false;
 	}
 

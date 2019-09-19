@@ -43,7 +43,7 @@ int wmain(int argc, wchar_t **argv)
 	HANDLE kevent;
 	HANDLE uevent;
 
-	KInterface &ki = KInterface::getInstance();
+	KInterface& ki = KInterface::getInstance();
 	std::vector<MEMORY_BASIC_INFORMATION> pages;
 	std::vector<MODULE_DATA> modules;
 
