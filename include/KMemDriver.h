@@ -25,9 +25,9 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define MEM_PAGES				0x803
 #define MEM_RPM					0x804
 #define MEM_WPM					0x805
-#define MEM_VALLOC               0x806
-#define MEM_VFREE                0x807
-#define MEM_VUNLINK              0x808
+#define MEM_VALLOC				0x806
+#define MEM_VFREE				0x807
+#define MEM_VUNLINK				0x808
 #define MEM_EXIT				0x809
 
 typedef struct _KERNEL_HEADER
@@ -66,6 +66,7 @@ typedef struct _MODULE_DATA
 	PVOID DllBase;
 	ULONG SizeOfImage;
 	CHAR BaseDllName[64];
+	CHAR FullDllPath[256];
 } MODULE_DATA, *PMODULE_DATA;
 
 typedef struct _KERNEL_MODULES

@@ -104,9 +104,12 @@ int wmain(int argc, wchar_t **argv)
 
 	MODULE_DATA *dll = NULL;
 	for (MODULE_DATA& md : modules) {
+		std::wcout << "DLLName: " << md.BaseDllName << ", "
+			<< "DLLPath: " << md.FullDllPath << std::endl;
 		if (strncmp(md.BaseDllName, "msvcrt.dll", sizeof md.BaseDllName) == 0) {
-			std::wcout << L"FOUND ENGINE DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
+			std::wcout << L"FOUND MSVCRT DLL at " << std::hex << md.DllBase << "!!!" << std::endl;
 			dll = &md;
+			break;
 		}
 	}
 

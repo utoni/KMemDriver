@@ -112,6 +112,16 @@ NTSTATUS GetModules(
 				);
 				RtlFreeAnsiString(&name);
 			}
+			tmpUnicodeStr.Buffer = (PWCH)ldrEntry32->FullDllName.Buffer;
+			tmpUnicodeStr.Length = ldrEntry32->FullDllName.Length;
+			tmpUnicodeStr.MaximumLength = ldrEntry32->FullDllName.MaximumLength;
+			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &tmpUnicodeStr, TRUE))) {
+				RtlCopyMemory(pmod->FullDllPath, name.Buffer,
+					(name.Length > sizeof pmod->FullDllPath ?
+						sizeof pmod->FullDllPath : name.Length)
+				);
+				RtlFreeAnsiString(&name);
+			}
 			pmod->DllBase = (PVOID)ldrEntry32->DllBase;
 			pmod->SizeOfImage = ldrEntry32->SizeOfImage;
 			//KDBG("DLL32 #%02lu: base -> 0x%p, size -> 0x%06X, name -> '%s'\n", used,
@@ -157,6 +167,13 @@ NTSTATUS GetModules(
 				RtlCopyMemory(pmod->BaseDllName, name.Buffer,
 					(name.Length > sizeof pmod->BaseDllName ?
 						sizeof pmod->BaseDllName : name.Length)
+				);
+				RtlFreeAnsiString(&name);
+			}
+			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &ldrEntry->FullDllName, TRUE))) {
+				RtlCopyMemory(pmod->FullDllPath, name.Buffer,
+					(name.Length > sizeof pmod->FullDllPath ?
+						sizeof pmod->FullDllPath : name.Length)
 				);
 				RtlFreeAnsiString(&name);
 			}
