@@ -28,7 +28,7 @@ static HMODULE GetRemoteModuleHandle(char *module_name,
 	for (auto& mod : modules) {
 		remote_module_name_length = strnlen(mod.BaseDllName, sizeof mod.BaseDllName);
 		if (strlen(module_name) == remote_module_name_length &&
-			!strncmp(module_name, mod.BaseDllName, remote_module_name_length))
+			!_strnicmp(module_name, mod.BaseDllName, remote_module_name_length))
 		{
 			return (HMODULE)mod.DllBase;
 		}
@@ -201,7 +201,7 @@ bool DLLHelper::FixImports()
 
 	//   Loop through all the required modules
 	while ((module_name = (char *)GetPtrFromRVA((DWORD)(impDesc->Name), m_NTHeader,
-		(PBYTE)m_TargetBaseAddress)))
+		(PBYTE)m_DLLPtr)))
 	{
 		HMODULE localMod = LoadLibraryA(module_name);
 		HMODULE remoteMod = GetRemoteModuleHandle(module_name, modules);
@@ -216,13 +216,13 @@ bool DLLHelper::FixImports()
 
 		IMAGE_THUNK_DATA *itd =
 			(IMAGE_THUNK_DATA *)GetPtrFromRVA((DWORD)(impDesc->FirstThunk), m_NTHeader,
-			(PBYTE)m_TargetBaseAddress);
+			(PBYTE)m_DLLPtr);
 
 		while (itd->u1.AddressOfData)
 		{
 			IMAGE_IMPORT_BY_NAME *iibn;
 			iibn = (IMAGE_IMPORT_BY_NAME *)GetPtrFromRVA((DWORD)(itd->u1.AddressOfData),
-				m_NTHeader, (PBYTE)m_TargetBaseAddress);
+				m_NTHeader, (PBYTE)m_DLLPtr);
 
 			itd->u1.Function = MakePtr(DWORD, GetRemoteProcAddress(localMod,
 				remoteMod, (char *)iibn->Name), 0);
