@@ -289,7 +289,6 @@ NTSTATUS AllocMemoryToProcess(IN PEPROCESS pep, IN OUT PVOID *baseAddr, IN OUT S
 	if (!apc) {
 		return STATUS_UNSUCCESSFUL;
 	}
-	*outSize = ADDRESS_AND_SIZE_TO_SPAN_PAGES(*baseAddr, 4096);
 	KeStackAttachProcess((PRKPROCESS)pep, apc);
 	status = ZwAllocateVirtualMemory(ZwCurrentProcess(), baseAddr, 0, outSize, MEM_COMMIT, protect);
 	if (!NT_SUCCESS(status)) {

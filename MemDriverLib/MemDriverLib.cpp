@@ -212,7 +212,7 @@ bool KInterface::VAlloc(HANDLE targetPID, PVOID *address, SIZE_T *size, ULONG pr
 	if (SendRecvWait(MEM_VALLOC) == SRR_SIGNALED) {
 		m_last_ntstatus = vr->StatusRes;
 		if (vr->StatusRes ||
-			vr->SizeRes != *size)
+			vr->SizeRes < *size)
 		{
 			std::stringstream err_str;
 			err_str << "Call VAlloc(0x" << std::hex << *address
