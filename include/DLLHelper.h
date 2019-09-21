@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <Windows.h>
 
 class DLLHelper
 {
@@ -8,9 +9,10 @@ public:
 	DLLHelper();
 	~DLLHelper();
 
-	bool Init(HANDLE targetPID, std::string& fullDllPath);
+	bool Init(HANDLE targetPID, const char * fullDllPath);
 	bool VerifyHeader();
 	bool InitTargetMemory();
+	bool FixImports();
 
 private:
 	HANDLE m_TargetPID = 0;
