@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "KMemDriver.h"
 #include "KInterface.h"
+#include "DLLHelper.h"
 
 #include <iostream>
 #include <iomanip>
@@ -138,6 +139,25 @@ int wmain(int argc, wchar_t **argv)
 #endif
 				if (!ki.VFree(targetPID, targetAddr, targetSize)) {
 					std::wcout << L"VFree failed" << std::endl;
+				}
+
+				static bool map_test_dll = true;
+				if (map_test_dll) {
+					map_test_dll = false;
+					DLLHelper dll;
+					if (!dll.Init(targetPID, "./TestDLL.dll")) {
+						std::wcout << L"DLL Init failed" << std::endl;
+					}
+					if (!dll.VerifyHeader()) {
+						std::wcout << L"DLL VerifyHeader failed" << std::endl;
+					}
+					if (!dll.InitTargetMemory()) {
+						std::wcout << L"DLL InitTargetMemory failed" << std::endl;
+					}
+					if (!dll.FixImports()) {
+						std::wcout << L"DLL FixImports failed" << std::endl;
+					}
+					std::wcout << L"DLL mapping succesful" << std::endl;
 				}
 			}
 			catch (std::runtime_error& err) {
