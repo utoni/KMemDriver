@@ -27,7 +27,7 @@
     <ClInclude Include="..\include\KMemDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DLLHelper.h">
+    <ClInclude Include="..\include\DLLHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
