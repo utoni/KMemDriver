@@ -234,3 +234,53 @@ bool DLLHelper::FixImports()
 
 	return true;
 }
+
+bool DLLHelper::FixRelocs()
+{
+	unsigned long long ImageBase;
+	unsigned int nBytes = 0;
+	unsigned long delta;
+	IMAGE_BASE_RELOCATION *reloc;
+
+	if (!m_TargetPID || !m_TargetBaseAddress || !m_NTHeader ||
+		!m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size)
+	{
+		std::stringstream err_str;
+		err_str << "Pre-requirement failed (PID: " << m_TargetPID << ", BaseAddress: "
+			<< m_TargetBaseAddress << ", NTHeader: " << m_NTHeader;
+		throw std::runtime_error(err_str.str());
+		return false;
+	}
+
+	reloc = (IMAGE_BASE_RELOCATION *)GetPtrFromRVA(
+		(DWORD)(m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress),
+		m_NTHeader, (PBYTE)m_DLLPtr);
+	ImageBase = m_NTHeader->OptionalHeader.ImageBase;
+	delta = MakeDelta(unsigned long, m_TargetBaseAddress, ImageBase);
+
+	while (1)
+	{
+		unsigned long *locBase =
+			(unsigned long *)GetPtrFromRVA((DWORD)(reloc->VirtualAddress), m_NTHeader,
+			(PBYTE)m_DLLPtr);
+		unsigned int numRelocs = (reloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
+
+		if (nBytes >= m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size) {
+			break;
+		}
+
+		unsigned short *locData = MakePtr(unsigned short *, reloc, sizeof(IMAGE_BASE_RELOCATION));
+		for (unsigned int i = 0; i < numRelocs; i++)
+		{
+			if (((*locData >> 12) & IMAGE_REL_BASED_HIGHLOW))
+				*MakePtr(unsigned long *, locBase, (*locData & 0x0FFF)) += delta;
+
+			locData++;
+		}
+
+		nBytes += reloc->SizeOfBlock;
+		reloc = (IMAGE_BASE_RELOCATION *)locData;
+	}
+
+	return true;
+}

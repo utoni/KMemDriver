@@ -13,6 +13,7 @@ public:
 	bool VerifyHeader();
 	bool InitTargetMemory();
 	bool FixImports();
+	bool FixRelocs();
 
 private:
 	HANDLE m_TargetPID = 0;
