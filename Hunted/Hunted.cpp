@@ -1,6 +1,7 @@
 #include "pch.h"
 #include "KMemDriver.h"
 #include "KInterface.h"
+#include "DLLHelper.h"
 
 #include <array>
 #include <iostream>
@@ -293,6 +294,7 @@ class Vec3_tpl<float>   size(12):
 							static bool first = true;
 							if (first) {
 								first = false;
+#if 0
 								PVOID targetAddr = (PVOID)((UINT64)NULL);
 								SIZE_T targetSize = 4096;
 								if (!ki.VAlloc(targetPID, &targetAddr, &targetSize, PAGE_EXECUTE_READWRITE)) {
@@ -301,23 +303,65 @@ class Vec3_tpl<float>   size(12):
 								if (!ki.VUnlink(targetPID, targetAddr)) {
 									std::wcout << L"VUnlink failed" << std::endl;
 								}
+#endif						
+								DLLHelper dll;
+								if (!dll.Init(targetPID, "./TestDLL.dll")) {
+									std::wcout << L"DLL Init failed" << std::endl;
+								}
+								if (!dll.VerifyHeader()) {
+									std::wcout << L"DLL VerifyHeader failed" << std::endl;
+								}
+								if (!dll.InitTargetMemory()) {
+									std::wcout << L"DLL InitTargetMemory failed" << std::endl;
+								}
+								if (!dll.HasImports())
+								{
+									std::wcout << L"DLL has no ImportTable" << std::endl;
+								}
+								else if (!dll.FixImports()) {
+									std::wcout << L"DLL FixImports failed" << std::endl;
+								}
+								if (!dll.HasRelocs()) {
+									std::wcout << L"DLL has no RelocTable" << std::endl;
+								}
+								else if (!dll.FixRelocs()) {
+									std::wcout << L"DLL FixRelocs failed" << std::endl;
+								}
+								if (!dll.CopyHeaderAndSections()) {
+									std::wcout << L"DLL CopyHeaderAndSections failed" << std::endl;
+								}
+								std::wcout << L"DLL mapping succesful, " 
+									<< "BaseAddress: " << WHEXOUT << dll.GetBaseAddress()
+									<< ", EntryPoint: " << WHEXOUT << dll.GetEntryPoint() << std::endl;
+
+								PVOID targetAddr = (PVOID)(dll.GetBaseAddress());
 								std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
+								if (!ki.VUnlink(targetPID, targetAddr)) {
+									std::wcout << L"VUnlink failed" << std::endl;
+								}
+
 								//BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0xeb, 0xfd };
 								BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90,
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+											  0xFF, 0xD0,
+											  0x90, 0x90,
+											  0x48, 0xB8,
+											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 											  0xFF, 0xE0 };
+								*(UINT64 *)((BYTE *)cc + 7) = dll.GetEntryPoint();
 								UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
-								*(UINT64 *)((BYTE *)cc + 7) = jumpBackAddr;
+								*(UINT64 *)((BYTE *)cc + 21) = jumpBackAddr;
 								printBuf(cc, sizeof cc, 32);
 								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
 
 								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
-
+#if 1
 								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 								printBuf(dd, sizeof dd, 32);
 								KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
+#endif
 							}
 #endif
 
@@ -454,7 +498,7 @@ class Vec3_tpl<float>   size(12):
 										<< L": ";
 									printBuf((UCHAR *)((ULONG_PTR)(diff.current_buffer) + e.first), e.second, e.second);
 								}
-						}
+							}
 #endif
 #if 0
 #if 1
@@ -481,7 +525,7 @@ class Vec3_tpl<float>   size(12):
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
-				}
+							}
 #endif
 #endif
 						}
@@ -495,7 +539,7 @@ class Vec3_tpl<float>   size(12):
 								(PVOID)((ULONGLONG)md.DllBase + /* 0x19F0F0 */ 0x5EA9DC));
 							std::wcout << L"Display.........: " << std::dec << displayWidth
 								<< " x " << displayHeight << std::endl;
-			}
+						}
 #endif
 #if 0
 						else if (!strncmp(md.BaseDllName, "ntdll.dll",
@@ -525,10 +569,10 @@ class Vec3_tpl<float>   size(12):
 									*/
 								}
 							}
-		}
+						}
 #endif
-	}
-}
+				}
+			}
 		}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
