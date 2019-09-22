@@ -1,31 +1,15 @@
-// dllmain.cpp : Defines the entry point for the DLL application.
 #include "stdafx.h"
 
-BOOL APIENTRY DllMain(HMODULE hModule,
-	DWORD  ul_reason_for_call,
-	LPVOID lpReserved
-)
+void APIENTRY LibEntry(void)
 {
-	switch (ul_reason_for_call)
-	{
-	case DLL_PROCESS_ATTACH:
-	case DLL_THREAD_ATTACH:
-	case DLL_THREAD_DETACH:
-	case DLL_PROCESS_DETACH:
-		break;
-	}
+	static bool firstEntry = true;
 
-	static bool bShowMessage = true;
-	if (bShowMessage) {
-		bShowMessage = false;
-	}
-	else {
-		return true;
-	}
+	if (firstEntry) {
+		firstEntry = false;
 
-	return MessageBoxA(NULL,
-		"DllMain from TestDLL",
-		"TestDLL Notification",
-		MB_OK | MB_ICONINFORMATION) == IDOK ? TRUE : FALSE;
+		MessageBoxA(NULL,
+			"DllMain from TestDLL",
+			"TestDLL Notification",
+			MB_OK | MB_ICONINFORMATION) == IDOK ? TRUE : FALSE;
+	}
 }
-
