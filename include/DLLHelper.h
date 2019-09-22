@@ -6,6 +6,19 @@
 
 typedef void(*LibEntry_FN)(void);
 
+static inline bool LoadAndTestLibraryEntry(const char * const fullDllPath)
+{
+	HMODULE TestDLLModule = LoadLibraryA(fullDllPath);
+	LibEntry_FN LibEntryProc = (LibEntry_FN)GetProcAddress(TestDLLModule, "LibEntry");
+	if (LibEntryProc) {
+		LibEntryProc();
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
 class DLLHelper
 {
 public:
