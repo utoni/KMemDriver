@@ -16,7 +16,7 @@ static FARPROC GetRemoteProcAddress(HMODULE localMod, HMODULE remoteMod, char *f
 	 * Account for potential differences in base address
 	 * of modules in different processes.
 	 */
-	unsigned long delta = MakeDelta(unsigned long, remoteMod, localMod);
+	ULONGLONG delta = MakeDelta(ULONGLONG, remoteMod, localMod);
 	return MakePtr(FARPROC, GetProcAddress(localMod, func_name), delta);
 }
 
@@ -228,7 +228,7 @@ bool DLLHelper::FixImports()
 			iibn = (IMAGE_IMPORT_BY_NAME *)GetPtrFromRVA((DWORD)(itd->u1.AddressOfData),
 				m_NTHeader, (PBYTE)m_DLLPtr);
 
-			itd->u1.Function = MakePtr(DWORD, GetRemoteProcAddress(localMod,
+			itd->u1.Function = MakePtr(ULONGLONG, GetRemoteProcAddress(localMod,
 				remoteMod, (char *)iibn->Name), 0);
 
 			itd++;

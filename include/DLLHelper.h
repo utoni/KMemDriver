@@ -39,6 +39,15 @@ public:
 	}
 	bool FixRelocs();
 	bool CopyHeaderAndSections();
+	UINT64 GetEntryPoint() {
+		if (!m_NTHeader) {
+			return 0;
+		}
+		return (UINT64)m_TargetBaseAddress + m_NTHeader->OptionalHeader.AddressOfEntryPoint;
+	}
+	UINT64 GetBaseAddress() {
+		return (UINT64)m_TargetBaseAddress;
+	}
 
 private:
 	HANDLE m_TargetPID = 0;
