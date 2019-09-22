@@ -3,6 +3,9 @@
 #include <string>
 #include <Windows.h>
 
+
+typedef void(*LibEntry_FN)(void);
+
 class DLLHelper
 {
 public:
@@ -12,8 +15,17 @@ public:
 	bool Init(HANDLE targetPID, const char * fullDllPath);
 	bool VerifyHeader();
 	bool InitTargetMemory();
+	bool HasImports() {
+		return m_NTHeader &&
+			m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size;
+	}
 	bool FixImports();
+	bool HasRelocs() {
+		return m_NTHeader &&
+			m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].Size;
+	}
 	bool FixRelocs();
+	bool CopyHeaderAndSections();
 
 private:
 	HANDLE m_TargetPID = 0;
