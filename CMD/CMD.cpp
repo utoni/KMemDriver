@@ -129,18 +129,17 @@ int wmain(int argc, wchar_t **argv)
 			PVOID targetAddr = (PVOID)((UINT64)NULL);
 			SIZE_T targetSize = 4096;
 			try {
+#if 0
 				if (!ki.VAlloc(targetPID, &targetAddr, &targetSize, PAGE_EXECUTE_READWRITE)) {
 					std::wcout << L"VAlloc failed" << std::endl;
 				}
-#if 0
 				if (!ki.VUnlink(targetPID, targetAddr)) {
 					std::wcout << L"VUnlink failed" << std::endl;
 				}
-#endif
 				if (!ki.VFree(targetPID, targetAddr, targetSize)) {
 					std::wcout << L"VFree failed" << std::endl;
 				}
-
+#endif
 				static bool map_test_dll = true;
 				if (map_test_dll) {
 					map_test_dll = false;
@@ -154,8 +153,21 @@ int wmain(int argc, wchar_t **argv)
 					if (!dll.InitTargetMemory()) {
 						std::wcout << L"DLL InitTargetMemory failed" << std::endl;
 					}
-					if (!dll.FixImports()) {
+					if (!dll.HasImports())
+					{
+						std::wcout << L"DLL has no ImportTable" << std::endl;
+					}
+					else if (!dll.FixImports()) {
 						std::wcout << L"DLL FixImports failed" << std::endl;
+					}
+					if (!dll.HasRelocs()) {
+						std::wcout << L"DLL has no RelocTable" << std::endl;
+					}
+					else if (!dll.FixRelocs()) {
+						std::wcout << L"DLL FixRelocs failed" << std::endl;
+					}
+					if (!dll.CopyHeaderAndSections()) {
+						std::wcout << L"DLL CopyHeaderAndSections failed" << std::endl;
 					}
 					std::wcout << L"DLL mapping succesful" << std::endl;
 				}
