@@ -93,31 +93,3 @@ public:
 		return wr.SizeRes;
 	}
 };
-
-template <SIZE_T SIZE>
-struct Diff {
-	BYTE current_buffer[SIZE];
-	BYTE old_buffer[SIZE];
-	std::vector<std::pair<SIZE_T, SIZE_T>> diffs;
-};
-
-class KScan
-{
-public:
-	template <typename T, SIZE_T SIZE>
-	static SSIZE_T ScanSimple(HANDLE targetPID, PVOID start_address, SIZE_T max_scansize, T(&a)[SIZE])
-	{
-		return KScanSimple(targetPID, start_address, max_scansize, a, sizeof T * SIZE);
-	}
-	template <SIZE_T SIZE>
-	static SSIZE_T BinDiffSimple(HANDLE targetPID, PVOID start_address, Diff<SIZE> *diff)
-	{
-		return KBinDiffSimple(targetPID, start_address, diff->current_buffer,
-			diff->old_buffer, SIZE, &diff->diffs);
-	}
-private:
-	static SSIZE_T KScanSimple(HANDLE targetPID, PVOID start_address, SIZE_T max_scansize,
-		PVOID scanbuf, SIZE_T scanbuf_size);
-	static SSIZE_T KBinDiffSimple(HANDLE targetPid, PVOID start_address,
-		BYTE *curbuf, BYTE *oldbuf, SIZE_T siz, std::vector<std::pair<SIZE_T, SIZE_T>> *diffs);
-};
