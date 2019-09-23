@@ -6,18 +6,8 @@
 
 typedef void(*LibEntry_FN)(void);
 
-static inline bool LoadAndTestLibraryEntry(const char * const fullDllPath)
-{
-	HMODULE TestDLLModule = LoadLibraryA(fullDllPath);
-	LibEntry_FN LibEntryProc = (LibEntry_FN)GetProcAddress(TestDLLModule, "LibEntry");
-	if (LibEntryProc) {
-		LibEntryProc();
-		return true;
-	}
-	else {
-		return false;
-	}
-}
+static inline bool LoadAndTestLibraryEntry(const char * const fullDllPath);
+bool VerifyPeHeader(UINT8 const * const buf, SIZE_T siz, IMAGE_NT_HEADERS ** const return_NTHeader);
 
 class DLLHelper
 {
@@ -25,7 +15,7 @@ public:
 	DLLHelper();
 	~DLLHelper();
 
-	bool Init(HANDLE targetPID, const char * fullDllPath);
+	bool Init(HANDLE targetPID, const char * const fullDllPath);
 	bool VerifyHeader();
 	bool InitTargetMemory();
 	bool HasImports() {
@@ -54,7 +44,6 @@ private:
 	std::string m_DLLPath;
 	DWORD m_DLLSize = 0;
 	UINT8 *m_DLLPtr = nullptr;
-	IMAGE_DOS_HEADER *m_DOSHeader = nullptr;
 	IMAGE_NT_HEADERS *m_NTHeader = nullptr;
 	PVOID m_TargetBaseAddress = nullptr;
 };

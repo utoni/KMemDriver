@@ -10,6 +10,45 @@
 #define MakeDelta(cast, x, y) (cast) ((DWORD_PTR)(x) - (DWORD_PTR)(y))
 
 
+bool LoadAndTestLibraryEntry(const char * const fullDllPath)
+{
+	HMODULE TestDLLModule = LoadLibraryA(fullDllPath);
+	LibEntry_FN LibEntryProc = (LibEntry_FN)GetProcAddress(TestDLLModule, "LibEntry");
+	if (LibEntryProc) {
+		LibEntryProc();
+		return true;
+	}
+	else {
+		return false;
+	}
+}
+
+bool VerifyPeHeader(UINT8 const * const buf, SIZE_T siz, IMAGE_NT_HEADERS ** const return_NTHeader)
+{
+	IMAGE_DOS_HEADER *m_DOSHeader;
+
+	if (!return_NTHeader || !buf || siz < sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_FILE_HEADER) +
+		sizeof(IMAGE_OPTIONAL_HEADER64))
+	{
+		return false;
+	}
+	*return_NTHeader = NULL;
+	m_DOSHeader = MakePtr(IMAGE_DOS_HEADER *, buf, 0);
+
+	if (m_DOSHeader->e_magic != IMAGE_DOS_SIGNATURE)
+	{
+		return false;
+	}
+
+	*return_NTHeader = MakePtr(IMAGE_NT_HEADERS *, buf, m_DOSHeader->e_lfanew);
+	if ((*return_NTHeader)->Signature != IMAGE_NT_SIGNATURE)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 static FARPROC GetRemoteProcAddress(HMODULE localMod, HMODULE remoteMod, char *func_name)
 {
 	/*
@@ -84,7 +123,7 @@ DLLHelper::~DLLHelper()
 	}
 }
 
-bool DLLHelper::Init(HANDLE targetPID, const char * fullDllPath) {
+bool DLLHelper::Init(HANDLE targetPID, const char * const fullDllPath) {
 	if (!targetPID) {
 		return false;
 	}
@@ -139,21 +178,8 @@ bool DLLHelper::VerifyHeader()
 	if (!m_DLLPtr) {
 		return false;
 	}
-	m_DOSHeader = MakePtr(IMAGE_DOS_HEADER *, m_DLLPtr, 0);
 
-	if (m_DOSHeader->e_magic != IMAGE_DOS_SIGNATURE)
-	{
-		delete m_DLLPtr;
-		return false;
-	}
-	m_NTHeader = MakePtr(IMAGE_NT_HEADERS *, m_DLLPtr, m_DOSHeader->e_lfanew);
-	if (m_NTHeader->Signature != IMAGE_NT_SIGNATURE)
-	{
-		delete m_DLLPtr;
-		return false;
-	}
-
-	return true;
+	return VerifyPeHeader(m_DLLPtr, m_DLLSize, &m_NTHeader);
 }
 
 bool DLLHelper::InitTargetMemory()
