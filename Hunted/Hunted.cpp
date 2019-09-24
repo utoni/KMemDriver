@@ -2,11 +2,13 @@
 #include "KMemDriver.h"
 #include "KInterface.h"
 #include "DLLHelper.h"
+#include "PatternScanner.h"
 
 #include <array>
 #include <iostream>
 #include <iomanip>
 #include <windows.h>
+#include <Shlwapi.h>
 
 #define WHEXOUT std::setfill(L'0') << std::setw(16) << std::hex
 
@@ -330,7 +332,7 @@ class Vec3_tpl<float>   size(12):
 								if (!dll.CopyHeaderAndSections()) {
 									std::wcout << L"DLL CopyHeaderAndSections failed" << std::endl;
 								}
-								std::wcout << L"DLL mapping succesful, " 
+								std::wcout << L"DLL mapping succesful, "
 									<< "BaseAddress: " << WHEXOUT << dll.GetBaseAddress()
 									<< ", EntryPoint: " << WHEXOUT << dll.GetEntryPoint() << std::endl;
 
@@ -340,16 +342,36 @@ class Vec3_tpl<float>   size(12):
 									std::wcout << L"VUnlink failed" << std::endl;
 								}
 
-								//BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90, 0xeb, 0xfd };
-								BYTE cc[] = { 0x90, 0x90, 0x90, 0x90, 0x90,
+								struct loadlib_user_data llua;
+								char * cryDllDir = new char[sizeof md.FullDllPath];
+								std::memcpy(cryDllDir, md.FullDllPath, sizeof md.FullDllPath);
+								PathRemoveFileSpecA(cryDllDir);
+								llua.additionalDllSearchDirectories.push_back(std::string(cryDllDir));
+								delete cryDllDir;
+								for (auto& dir : llua.additionalDllSearchDirectories) {
+									std::wcout << L"AdditionalDLLDir: "
+										<< std::wstring(dir.begin(), dir.end()) << std::endl;
+								}
+
+								PatternScanner pscan(&loadlib_data, &llua);
+								pscan.Scan(md, "01 23 45 67 89 ?? ab cd ef ?? AB CD EF FF");
+
+								BYTE cc[] = { /* nops */
+											  0x90, 0x90, 0x90, 0x90, 0x90,
+											  /* mov rax, 0x00000000000000 */
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+											  /* call rax */
 											  0xFF, 0xD0,
+											  /* nops */
 											  0x90, 0x90,
+											  /* mov rax, 0x00000000000000 */
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+											  /* jmp rax */
 											  0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)cc + 7) = dll.GetEntryPoint();
+								/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +275 */
 								UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
 								*(UINT64 *)((BYTE *)cc + 21) = jumpBackAddr;
 								printBuf(cc, sizeof cc, 32);
@@ -360,6 +382,7 @@ class Vec3_tpl<float>   size(12):
 								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 								printBuf(dd, sizeof dd, 32);
+								/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +9 */
 								KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
 #endif
 							}
@@ -427,7 +450,7 @@ class Vec3_tpl<float>   size(12):
 										//break;
 									}
 									else std::wcerr << "Get Entity failed" << std::endl;
-								}
+						}
 							}
 							else std::wcerr << "Get EntityArray failed" << std::endl;
 #endif
@@ -524,8 +547,8 @@ class Vec3_tpl<float>   size(12):
 									}
 									printf("\nGot %llu entities ..\n", i);
 #endif
-								}
-							}
+				}
+			}
 #endif
 #endif
 						}
@@ -567,9 +590,9 @@ class Vec3_tpl<float>   size(12):
 										<< std::endl << L"  size: " << e.second
 										<< std::endl;
 									*/
-								}
-							}
-						}
+		}
+	}
+}
 #endif
 				}
 			}
