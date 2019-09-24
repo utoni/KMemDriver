@@ -356,7 +356,15 @@ class Vec3_tpl<float>   size(12):
 								PatternScanner pscan(&loadlib_data, &llua);
 								pscan.Scan(md, "01 23 45 67 89 ?? ab cd ef ?? AB CD EF FF");
 
-								BYTE cc[] = { /* nops */
+								BYTE cc[] = { /* push rax; push rbx; push rcx; push rdx; push rsi;
+												 push rdi; push rsp; push rbp; push r8; push r9;
+												 push r10; push r11; push r12; push r13; push r14;
+												 push r15 */
+											  0x50, 0x53, 0x51, 0x52, 0x56, 0x57,
+											  0x54, 0x55, 0x41, 0x50, 0x41, 0x51,
+											  0x41, 0x52, 0x41, 0x53, 0x41, 0x54,
+											  0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
+											  /* nops */
 											  0x90, 0x90, 0x90, 0x90, 0x90,
 											  /* mov rax, 0x00000000000000 */
 											  0x48, 0xB8,
@@ -365,15 +373,25 @@ class Vec3_tpl<float>   size(12):
 											  0xFF, 0xD0,
 											  /* nops */
 											  0x90, 0x90,
+											  /* pop r15; pop r14; pop r13; pop r12; pop r11;
+											     pop r10; pop r9; pop r8; pop rbp; pop rsp;
+												 pop rdi; pop rsi; pop rdx; pop rcx; pop rbx;
+												 pop rax */
+											  0x41, 0x5F, 0x41, 0x5E, 0x41, 0x5D,
+											  0x41, 0x5C, 0x41, 0x5B, 0x41, 0x5A,
+											  0x41, 0x59, 0x41, 0x58, 0x5D, 0x5C,
+											  0x5F, 0x5E, 0x5A, 0x59, 0x5B, 0x58,
+											  /* nops */
+											  0x90, 0x90,
 											  /* mov rax, 0x00000000000000 */
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 											  /* jmp rax */
 											  0xFF, 0xE0 };
-								*(UINT64 *)((BYTE *)cc + 7) = dll.GetEntryPoint();
+								*(UINT64 *)((BYTE *)cc + 31) = dll.GetEntryPoint();
 								/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +275 */
 								UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
-								*(UINT64 *)((BYTE *)cc + 21) = jumpBackAddr;
+								*(UINT64 *)((BYTE *)cc + 71) = jumpBackAddr;
 								printBuf(cc, sizeof cc, 32);
 								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
 
@@ -450,7 +468,7 @@ class Vec3_tpl<float>   size(12):
 										//break;
 									}
 									else std::wcerr << "Get Entity failed" << std::endl;
-						}
+								}
 							}
 							else std::wcerr << "Get EntityArray failed" << std::endl;
 #endif
@@ -547,8 +565,8 @@ class Vec3_tpl<float>   size(12):
 									}
 									printf("\nGot %llu entities ..\n", i);
 #endif
-				}
-			}
+								}
+							}
 #endif
 #endif
 						}
@@ -590,20 +608,20 @@ class Vec3_tpl<float>   size(12):
 										<< std::endl << L"  size: " << e.second
 										<< std::endl;
 									*/
-		}
-	}
-}
+								}
+							}
+						}
 #endif
 				}
 			}
-		}
+						}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
 		}
-	} while (running);
+				} while (running);
 
-	std::wcout << L"Driver shutdown .." << std::endl;
-	ki.Exit();
+				std::wcout << L"Driver shutdown .." << std::endl;
+				ki.Exit();
 
-	return 0;
-}
+				return 0;
+			}
