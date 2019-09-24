@@ -24,14 +24,34 @@ bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
 {
 	HMODULE hMod;
 	struct loadlib_user_data * const user_data = (struct loadlib_user_data * const) user_ptr;
+	std::vector<DLL_DIRECTORY_COOKIE> dir_cookies;
 
 	if (user_data) {
-		for (auto& searchDir : user_data->additionalDllSearchDirectories) {
-			AddDllDirectory(std::wstring(searchDir.begin(), searchDir.end()).c_str());
+		if (user_data->additionalDllSearchDirectories.size() == 1) {
+			SetDllDirectoryA(user_data->additionalDllSearchDirectories[0].c_str());
+		}
+		else {
+			for (auto& searchDir : user_data->additionalDllSearchDirectories) {
+				dir_cookies.push_back(AddDllDirectory(std::wstring(searchDir.begin(),
+					searchDir.end()).c_str()));
+			}
+			if (!SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_USER_DIRS)) {
+				return false;
+			}
 		}
 	}
 
 	hMod = LoadLibraryA(module.FullDllPath);
+
+	if (user_data) {
+		if (dir_cookies.size() > 1) {
+			SetDllDirectoryA("");
+		} else
+		for (auto& searchDir : dir_cookies) {
+			RemoveDllDirectory(searchDir);
+		}
+	}
+
 	if (!hMod) {
 		*buffer = NULL;
 		*size = 0;
@@ -148,7 +168,7 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 			if (nBytes >= ntHeader->OptionalHeader.SizeOfImage)
 				break;
 
-
+			std::cout << "Sec: " << secHeader->Name << std::endl;
 
 			virtualSize = secHeader->VirtualAddress;
 			secHeader++;
