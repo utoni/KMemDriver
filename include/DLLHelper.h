@@ -38,6 +38,13 @@ public:
 	UINT64 GetBaseAddress() {
 		return (UINT64)m_TargetBaseAddress;
 	}
+	UINT64 GetDllProcAddress(const char * const proc_name) {
+		HMODULE hBase = LoadLibraryA(m_DLLPath.c_str());
+		FARPROC hEntry = GetProcAddress(hBase, proc_name);
+		UINT64 result = ((UINT64)hEntry - (UINT64)hBase) + (UINT64)m_TargetBaseAddress;
+		FreeLibrary(hBase);
+		return result;
+	}
 
 private:
 	HANDLE m_TargetPID = 0;
