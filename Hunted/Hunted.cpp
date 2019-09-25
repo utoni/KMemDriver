@@ -153,8 +153,6 @@ int wmain(int argc, wchar_t **argv)
 						if (!strncmp(md.BaseDllName, "CryEntitySystem.dll",
 							sizeof md.BaseDllName))
 						{
-							std::wcout << L"CryEntitySystem.dll.: 0x" << std::hex << md.DllBase << std::endl;
-
 							/* "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutCEntitySystem C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryEntitySystem\EntitySystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" */
 /*
 
@@ -356,6 +354,17 @@ class Vec3_tpl<float>   size(12):
 								PatternScanner pscan(&loadlib_data, &llua);
 								pscan.Scan(md, "01 23 45 67 89 ?? ab cd ef ?? AB CD EF FF");
 
+								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
+								UINT64 globalEnvAddr = 0;
+								for (MODULE_DATA& md : modules) {
+									if (!strncmp(md.BaseDllName, "CryAction.dll",
+										sizeof md.BaseDllName)) {
+										//48 8B 48 20 48 8B 01 FF 90 20 01 00 00
+										globalEnvAddr = (UINT64)md.DllBase + 0x70E848;
+										break;
+									}
+								}
+
 								BYTE cc[] = { /* push rax; push rbx; push rcx; push rdx; push rsi;
 												 push rdi; push rsp; push rbp; push r8; push r9;
 												 push r10; push r11; push r12; push r13; push r14;
@@ -366,7 +375,10 @@ class Vec3_tpl<float>   size(12):
 											  0x41, 0x55, 0x41, 0x56, 0x41, 0x57,
 											  /* nops */
 											  0x90, 0x90, 0x90, 0x90, 0x90,
-											  /* mov rax, 0x00000000000000 */
+											  /* mov rcx, 0x0000000000000000 */
+											  0x48, 0xB9,
+											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+											  /* mov rax, 0x0000000000000000 */
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 											  /* call rax */
@@ -374,7 +386,7 @@ class Vec3_tpl<float>   size(12):
 											  /* nops */
 											  0x90, 0x90,
 											  /* pop r15; pop r14; pop r13; pop r12; pop r11;
-											     pop r10; pop r9; pop r8; pop rbp; pop rsp;
+												 pop r10; pop r9; pop r8; pop rbp; pop rsp;
 												 pop rdi; pop rsi; pop rdx; pop rcx; pop rbx;
 												 pop rax */
 											  0x41, 0x5F, 0x41, 0x5E, 0x41, 0x5D,
@@ -383,19 +395,19 @@ class Vec3_tpl<float>   size(12):
 											  0x5F, 0x5E, 0x5A, 0x59, 0x5B, 0x58,
 											  /* nops */
 											  0x90, 0x90,
-											  /* mov rax, 0x00000000000000 */
+											  /* mov rax, 0x0000000000000000 */
 											  0x48, 0xB8,
 											  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 											  /* jmp rax */
 											  0xFF, 0xE0 };
-								*(UINT64 *)((BYTE *)cc + 31) = dll.GetEntryPoint();
+								*(UINT64 *)((BYTE *)cc + 31) = globalEnvAddr;
+								*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
 								/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +275 */
 								UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
-								*(UINT64 *)((BYTE *)cc + 71) = jumpBackAddr;
+								*(UINT64 *)((BYTE *)cc + 81) = jumpBackAddr;
 								printBuf(cc, sizeof cc, 32);
 								KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
 
-								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
 #if 1
 								BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 								*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
@@ -405,7 +417,7 @@ class Vec3_tpl<float>   size(12):
 #endif
 							}
 #endif
-
+#if 0
 							UINT64 m_idForced = KMemory::Rpm<UINT64>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 786970));
 							std::wcout << L"m_pidForced.........: 0x" << WHEXOUT << m_idForced << std::endl;
@@ -421,6 +433,7 @@ class Vec3_tpl<float>   size(12):
 							UINT16 m_maxUsedEntityIndex = KMemory::Rpm<UINT16>(targetPID,
 								(PVOID)((UINT64)g_pEnv + 112 + 262138));
 							std::wcout << L"m_maxUsedEntityIndex: 0x" << WHEXOUT << m_maxUsedEntityIndex << std::endl;
+#endif
 #if 0
 							//UINT64 startOffsetMaxUsedEntities = (m_maxUsedEntityIndex < m_freeListStartIndex ? m_maxUsedEntityIndex : m_freeListStartIndex) * sizeof(PVOID);
 							UINT64 startOffsetMaxUsedEntities = m_freeListStartIndex * sizeof(PVOID);
@@ -562,7 +575,7 @@ class Vec3_tpl<float>   size(12):
 										UINT64 value = *(UINT64 *)&tmp[i];
 										if (value)
 											printf("0x%p ", (PVOID)value);
-									}
+						}
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
@@ -608,12 +621,12 @@ class Vec3_tpl<float>   size(12):
 										<< std::endl << L"  size: " << e.second
 										<< std::endl;
 									*/
-								}
-							}
-						}
-#endif
 				}
 			}
+		}
+#endif
+	}
+}
 						}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
