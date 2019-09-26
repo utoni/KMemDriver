@@ -29,13 +29,13 @@ bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
 bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer,
 	PVOID const user_ptr);
 
-extern const struct map_file_data loadlib_data;
-extern const struct map_file_data kmem_data;
+extern const struct map_file_data map_loadlib;
+extern const struct map_file_data map_kmem;
 
 class PatternScanner
 {
 public:
-	explicit PatternScanner(struct map_file_data const * const mfd = &loadlib_data, PVOID map_file_user_data = NULL);
+	explicit PatternScanner(struct map_file_data const * const mfd = &map_loadlib, PVOID map_file_user_data = NULL);
 	~PatternScanner();
 	void SetScanLowAddress(UINT64 startAddress) {
 		m_LowAddress = startAddress;

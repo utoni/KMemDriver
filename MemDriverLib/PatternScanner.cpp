@@ -11,11 +11,11 @@
 #include <Windows.h>
 
 
-const struct map_file_data loadlib_data = {
+const struct map_file_data map_loadlib = {
 	map_file_loadlib, map_file_loadlib_cleanup, true
 };
 
-const struct map_file_data kmem_data = {
+const struct map_file_data map_kmem = {
 	map_file_kmem, map_file_kmem_cleanup, false
 };
 
