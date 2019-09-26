@@ -11,6 +11,15 @@
 #include <Windows.h>
 
 
+static bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
+	SIZE_T * const size, PVOID const user_ptr);
+static bool map_file_loadlib_cleanup(MODULE_DATA& module, PVOID buffer,
+	PVOID const user_ptr);
+static bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
+	SIZE_T * const size, PVOID const user_ptr);
+static bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer,
+	PVOID const user_ptr);
+
 const struct map_file_data map_loadlib = {
 	map_file_loadlib, map_file_loadlib_cleanup, true
 };
@@ -46,10 +55,11 @@ bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
 	if (user_data) {
 		if (dir_cookies.size() > 1) {
 			SetDllDirectoryA("");
-		} else
-		for (auto& searchDir : dir_cookies) {
-			RemoveDllDirectory(searchDir);
 		}
+		else
+			for (auto& searchDir : dir_cookies) {
+				RemoveDllDirectory(searchDir);
+			}
 	}
 
 	if (!hMod) {

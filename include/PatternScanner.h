@@ -20,14 +20,6 @@ struct map_file_data {
 struct loadlib_user_data {
 	std::vector<std::string> additionalDllSearchDirectories;
 };
-bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
-	SIZE_T * const size, PVOID const user_ptr);
-bool map_file_loadlib_cleanup(MODULE_DATA& module, PVOID buffer,
-	PVOID const user_ptr);
-bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
-	SIZE_T * const size, PVOID const user_ptr);
-bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer,
-	PVOID const user_ptr);
 
 extern const struct map_file_data map_loadlib;
 extern const struct map_file_data map_kmem;
