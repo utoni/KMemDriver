@@ -20,13 +20,8 @@ static bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
 static bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer,
 	PVOID const user_ptr);
 
-const struct map_file_data map_loadlib = {
-	map_file_loadlib, map_file_loadlib_cleanup, true
-};
-
-const struct map_file_data map_kmem = {
-	map_file_kmem, map_file_kmem_cleanup, false
-};
+const struct map_file_data map_loadlib = map_file_data(map_file_loadlib, map_file_loadlib_cleanup, true);
+const struct map_file_data map_kmem = map_file_data(map_file_kmem, map_file_kmem_cleanup, false);
 
 bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
 	SIZE_T * const size, PVOID const user_ptr)
@@ -161,7 +156,7 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 		return false;
 	}
 
-	if (!mfd->map_file(module, (PVOID *)&mappedBuffer, &mappedSize, map_file_user_data))
+	if (!mfd->mapfile(module, (PVOID *)&mappedBuffer, &mappedSize, map_file_user_data))
 	{
 		return false;
 	}
@@ -190,7 +185,7 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 		doScan(mappedBuffer, mappedSize, foundOffsets);
 	}
 
-	if (!mfd->map_file_cleanup(module, mappedBuffer, map_file_user_data))
+	if (!mfd->mapcleanup(module, mappedBuffer, map_file_user_data))
 	{
 		return false;
 	}

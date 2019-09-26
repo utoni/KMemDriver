@@ -12,8 +12,10 @@ typedef bool(*map_file_cleanup_cb)(IN MODULE_DATA&,
 	IN PVOID, IN PVOID const);
 
 struct map_file_data {
-	map_file_cb map_file;
-	map_file_cleanup_cb map_file_cleanup;
+	explicit map_file_data(map_file_cb _mapfile, map_file_cleanup_cb _mapcleanup, bool _in_memory_module)
+		: mapfile(_mapfile), mapcleanup(_mapcleanup), in_memory_module(_in_memory_module) {}
+	map_file_cb mapfile;
+	map_file_cleanup_cb mapcleanup;
 	bool in_memory_module;
 };
 
