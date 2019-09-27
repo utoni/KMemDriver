@@ -8,7 +8,6 @@ extern "C"
 BOOL WINAPI _CRT_INIT(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 
 #pragma comment(lib, "vcruntime.lib")
-//#pragma comment(lib, "ucrt.lib")
 
 typedef void(*myfree_t)(void *ptr);
 typedef void*(*mymalloc_t)(size_t n);
