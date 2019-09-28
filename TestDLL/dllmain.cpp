@@ -21,22 +21,29 @@ struct ResolvedDllEntry {
 #define MSVCRT_ENTRY(function_name) DLL_ENTRY("msvcrt.dll", function_name)
 
 static struct ResolvedDllEntry resolved_smybols[] = {
+	MSVCRT_ENTRY("_errno"),
 	MSVCRT_ENTRY("malloc"), MSVCRT_ENTRY("free"), MSVCRT_ENTRY("_callnewh"),
+	MSVCRT_ENTRY("_invalid_parameter_noinfo_noreturn"),
 	MSVCRT_ENTRY("abort"), MSVCRT_ENTRY("calloc"), MSVCRT_ENTRY("frexp"),
 	MSVCRT_ENTRY("islower"), MSVCRT_ENTRY("isspace"), MSVCRT_ENTRY("isupper"),
-	MSVCRT_ENTRY("ldexp"), MSVCRT_ENTRY("localeconv"),
-	MSVCRT_ENTRY("memchr"), MSVCRT_ENTRY("memcmp"), MSVCRT_ENTRY("memcpy")
+	MSVCRT_ENTRY("ldexp"), MSVCRT_ENTRY("localeconv"), MSVCRT_ENTRY("__pctype_func"),
+	MSVCRT_ENTRY("___lc_locale_name_func"), MSVCRT_ENTRY("___lc_codepage_func")
 };
 static const SIZE_T resolved_symbols_size =
 sizeof(resolved_smybols) / sizeof(resolved_smybols[0]);
 
 enum SymbolIndex {
-	SYM_MALLOC, SYM_FREE, SYM_CALLNEWH, SYM_INVALID_PARAMETER_NOINFO_NORETURN,
+	SYM_ERRNO,
+	SYM_MALLOC, SYM_FREE, SYM_CALLNEWH,
+	SYM_INVALID_PARAMETER_NOINFO_NORETURN,
 	SYM_ABORT, SYM_CALLOC, SYM_FREXP,
 	SYM_ISLOWER, SYM_ISSPACE, SYM_ISUPPER,
-	SYM_LDEXP, SYM_LOCALECONV,
-	SYM_MEMCHR, SYM_MEMCMP, SYM_MEMCPY
+	SYM_LDEXP, SYM_LOCALECONV, SYM_PCTYPE,
+	SYM_LC_LOCALE_NAME, SYM_LC_CODEPAGE,
+	NUMBER_OF_SYMBOLS
 };
+
+static_assert(NUMBER_OF_SYMBOLS == resolved_symbols_size, "Invalid number of Symbols in the table/enum");
 
 #define WRAPPER_FUNCTION(symbol_index, linker_function_name, return_type, ...) \
 	typedef return_type (* symbol_index ## _FN)(__VA_ARGS__); \
@@ -45,6 +52,10 @@ enum SymbolIndex {
 #define RUN_REAL_FN(symbol_index, ...) \
 	(((symbol_index ## _FN)resolved_smybols[symbol_index].resolvedProc)(__VA_ARGS__))
 
+int* __cdecl _errno(void) {
+	typedef int*(*SYM_ERRNO_FN)();
+	return (((SYM_ERRNO_FN)resolved_smybols[SYM_ERRNO].resolvedProc)());
+}
 WRAPPER_FUNCTION(SYM_MALLOC, malloc, void *, size_t n) {
 	return RUN_REAL_FN(SYM_MALLOC, n);
 }
@@ -76,6 +87,22 @@ WRAPPER_FUNCTION(SYM_ISSPACE, isspace, int, int c) {
 WRAPPER_FUNCTION(SYM_ISUPPER, isupper, int, int c) {
 	return RUN_REAL_FN(SYM_ISUPPER, c);
 }
+WRAPPER_FUNCTION(SYM_LDEXP, ldexp, double, double x, int exp) {
+	return RUN_REAL_FN(SYM_LDEXP, x, exp);
+}
+WRAPPER_FUNCTION(SYM_LOCALECONV, localeconv, struct lconv *, void) {
+	return RUN_REAL_FN(SYM_LOCALECONV);
+}
+WRAPPER_FUNCTION(SYM_PCTYPE, __pctype_func, const unsigned short *, void) {
+	return RUN_REAL_FN(SYM_PCTYPE);
+}
+WRAPPER_FUNCTION(SYM_LC_LOCALE_NAME, ___lc_locale_name_func, wchar_t **, void) {
+	return RUN_REAL_FN(SYM_LC_LOCALE_NAME);
+}
+WRAPPER_FUNCTION(SYM_LC_CODEPAGE, ___lc_codepage_func, UINT, void) {
+	return RUN_REAL_FN(SYM_LC_CODEPAGE);
+}
+
 
 
 extern "C"
