@@ -143,7 +143,8 @@ int wmain(int argc, wchar_t **argv)
 				static bool map_test_dll = true;
 				if (map_test_dll) {
 					map_test_dll = false;
-					DLLHelper dll;
+					SymbolResolver symres;
+					DLLHelper dll(symres);
 					if (!dll.Init(targetPID, "./TestDLL.dll")) {
 						std::wcout << L"DLL Init failed" << std::endl;
 					}
