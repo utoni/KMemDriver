@@ -341,26 +341,33 @@ class Vec3_tpl<float>   size(12):
 									std::wcout << L"VUnlink failed" << std::endl;
 								}
 
-								struct loadlib_user_data llua;
-								char * cryDllDir = new char[sizeof md.FullDllPath];
-								std::memcpy(cryDllDir, md.FullDllPath, sizeof md.FullDllPath);
-								PathRemoveFileSpecA(cryDllDir);
-								llua.additionalDllSearchDirectories.push_back(std::string(cryDllDir));
-								delete cryDllDir;
-								for (auto& dir : llua.additionalDllSearchDirectories) {
-									std::wcout << L"AdditionalDLLDir: "
-										<< std::wstring(dir.begin(), dir.end()) << std::endl;
-								}
-
-								PatternScanner pscan(sresolv, &map_loadlib, &llua);
-								pscan.Scan(md, "01 23 45 67 89 ?? ab cd ef ?? AB CD EF FF");
-
-								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
 								UINT64 globalEnvAddr = 0;
 								for (MODULE_DATA& md : modules) {
 									if (!strncmp(md.BaseDllName, "CryAction.dll",
 										sizeof md.BaseDllName)) {
-										//48 8B 48 20 48 8B 01 FF 90 20 01 00 00
+
+										struct loadlib_user_data llua;
+										char * cryDllDir = new char[sizeof md.FullDllPath];
+										std::memcpy(cryDllDir, md.FullDllPath, sizeof md.FullDllPath);
+										PathRemoveFileSpecA(cryDllDir);
+										llua.additionalDllSearchDirectories.push_back(std::string(cryDllDir));
+										delete cryDllDir;
+										for (auto& dir : llua.additionalDllSearchDirectories) {
+											std::wcout << L"AdditionalDLLDir: "
+												<< std::wstring(dir.begin(), dir.end()) << std::endl;
+										}
+
+										PatternScanner pscan(sresolv, &map_loadlib, &llua);
+										std::vector<SIZE_T> foundAddresses;
+										pscan.Scan(md, "48 8B 48 20 48 8B 01 FF 90 20 01 00 00", foundAddresses);
+										for (auto& addr : foundAddresses) {
+											std::wcout << "Addr: " << addr << std::endl;
+											BYTE content[32];
+											KMemoryBuf::Rpm<sizeof content>(targetPID, (PVOID)addr, &content[0]);
+											printBuf(content, sizeof content, 32);
+										}
+
+										// pEnv: 48 8B 48 20 48 8B 01 FF 90 20 01 00 00
 										globalEnvAddr = (UINT64)md.DllBase + 0x70E848;
 										break;
 									}
@@ -553,7 +560,7 @@ class Vec3_tpl<float>   size(12):
 										<< L": ";
 									printBuf((UCHAR *)((ULONG_PTR)(diff.current_buffer) + e.first), e.second, e.second);
 								}
-							}
+						}
 #endif
 #if 0
 #if 1
@@ -576,11 +583,11 @@ class Vec3_tpl<float>   size(12):
 										UINT64 value = *(UINT64 *)&tmp[i];
 										if (value)
 											printf("0x%p ", (PVOID)value);
-						}
+									}
 									printf("\nGot %llu entities ..\n", i);
 #endif
 								}
-							}
+				}
 #endif
 #endif
 						}
@@ -594,7 +601,7 @@ class Vec3_tpl<float>   size(12):
 								(PVOID)((ULONGLONG)md.DllBase + /* 0x19F0F0 */ 0x5EA9DC));
 							std::wcout << L"Display.........: " << std::dec << displayWidth
 								<< " x " << displayHeight << std::endl;
-						}
+			}
 #endif
 #if 0
 						else if (!strncmp(md.BaseDllName, "ntdll.dll",
@@ -622,20 +629,20 @@ class Vec3_tpl<float>   size(12):
 										<< std::endl << L"  size: " << e.second
 										<< std::endl;
 									*/
-				}
-			}
+								}
+							}
 		}
 #endif
 	}
 }
-						}
+		}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
 		}
-				} while (running);
+	} while (running);
 
-				std::wcout << L"Driver shutdown .." << std::endl;
-				ki.Exit();
+	std::wcout << L"Driver shutdown .." << std::endl;
+	ki.Exit();
 
-				return 0;
-			}
+	return 0;
+}
