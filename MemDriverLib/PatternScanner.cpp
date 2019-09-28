@@ -122,17 +122,46 @@ bool PatternScanner::checkPattern(MODULE_DATA& module, const char * const patter
 	return true;
 }
 
-#include <iostream>
-bool PatternScanner::doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<UINT64>& foundOffsets)
+constexpr UINT8 HexCharToInt(char Input)
 {
-	//std::wcout << "BLAAAAAAAAAAAAA" << std::endl;
-	//std::wstring bla(str_pattern.begin(), str_pattern.end());
-	//std::wcout << bla << std::endl;
-	std::cout << pattern << std::endl;
-	return false;
+	return
+		((Input >= 'a') && (Input <= 'f'))
+		? (Input - 87)
+		: ((Input >= 'A') && (Input <= 'F'))
+		? (Input - 55)
+		: ((Input >= '0') && (Input <= '9'))
+		? (Input - 48)
+		: throw std::exception{};
 }
 
-bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
+constexpr UINT8 HexChar(char High, char Low)
+{
+	return (HexCharToInt(High) << 4) | (HexCharToInt(Low));
+}
+
+bool PatternScanner::doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<SIZE_T>& foundOffsets)
+{
+	SIZE_T pattern_index = 0, pattern_length = pattern.length();
+
+	for (SIZE_T i = 0; i + (pattern_length / 2) < size; ++i) {
+		if (pattern_index == pattern_length) {
+			pattern_index = 0;
+			foundOffsets.push_back((SIZE_T)buf + i - pattern_length / 2);
+		}
+		if (pattern.at(pattern_index) == '?' && pattern.at(pattern_index + 1) == '?' ||
+			buf[i] == HexChar(pattern.at(pattern_index), pattern.at(pattern_index + 1))) {
+			pattern_index += 2;
+		}
+		else {
+			pattern_index = 0;
+			continue;
+		}
+	}
+
+	return true;
+}
+
+bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern, std::vector<SIZE_T>& foundAddresses)
 {
 	bool result;
 	std::string validPattern;
@@ -140,7 +169,6 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 	IMAGE_SECTION_HEADER *secHeader;
 	UINT8 *mappedBuffer = NULL;
 	SIZE_T mappedSize = 0;
-	std::vector<UINT64> foundOffsets;
 
 	if (!checkPattern(module, pattern, validPattern)) {
 		return false;
@@ -158,22 +186,26 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 
 		DWORD nBytes = 0, virtualSize;
 		secHeader = IMAGE_FIRST_SECTION(ntHeader);
-		for (SIZE_T i = 0; ntHeader->FileHeader.NumberOfSections; i++)
+		result = true;
+		for (SIZE_T i = 0; i < ntHeader->FileHeader.NumberOfSections; i++)
 		{
 			if (nBytes >= ntHeader->OptionalHeader.SizeOfImage)
 				break;
 
-			std::cout << "Sec: " << secHeader->Name << std::endl;
+			if (!doScan(validPattern, MakePtr(BYTE *, mappedBuffer,
+				secHeader->VirtualAddress), secHeader->SizeOfRawData, foundAddresses))
+			{
+				result = false;
+			}
 
 			virtualSize = secHeader->VirtualAddress;
 			secHeader++;
 			virtualSize = secHeader->VirtualAddress - virtualSize;
 			nBytes += virtualSize;
 		}
-		result = false;
 	}
 	else {
-		result = doScan(validPattern, mappedBuffer, mappedSize, foundOffsets);
+		result = doScan(validPattern, mappedBuffer, mappedSize, foundAddresses);
 	}
 
 	if (!mfd->mapcleanup(m_symbolResolver, module, mappedBuffer, map_file_user_data))

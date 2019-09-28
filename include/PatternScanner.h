@@ -39,10 +39,10 @@ public:
 	void SetScanAddress(UINT64 startAddress) {
 		m_LowAddress = startAddress;
 	}
-	bool Scan(MODULE_DATA& module, const char * const pattern);
+	bool Scan(MODULE_DATA& module, const char * const pattern, std::vector<SIZE_T>& foundAddresses);
 private:
 	bool checkPattern(MODULE_DATA& module, const char * const pattern, std::string& result);
-	bool doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<UINT64>& foundOffsets);
+	bool doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<SIZE_T>& foundAddresses);
 
 	SymbolResolver& m_symbolResolver;
 

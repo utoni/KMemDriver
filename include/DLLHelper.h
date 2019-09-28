@@ -4,6 +4,9 @@
 #include <Windows.h>
 
 
+#define MakePtr(cast, ptr, addValue) (cast)((DWORD_PTR)(ptr) + (DWORD_PTR)(addValue))
+#define MakeDelta(cast, x, y) (cast) ((DWORD_PTR)(x) - (DWORD_PTR)(y))
+
 struct ResolvedDllEntry {
 	const char * const baseDllName;
 	const char * const functionName;

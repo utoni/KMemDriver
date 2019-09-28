@@ -6,9 +6,6 @@
 #include <Windows.h>
 
 
-#define MakePtr(cast, ptr, addValue) (cast)((DWORD_PTR)(ptr) + (DWORD_PTR)(addValue))
-#define MakeDelta(cast, x, y) (cast) ((DWORD_PTR)(x) - (DWORD_PTR)(y))
-
 static HMODULE sym_res_loadlib(IN const char * const module_name,
 	IN PVOID const symbol_resolver_user_data);
 static FARPROC sym_res_getproc(IN HMODULE const module_base,
