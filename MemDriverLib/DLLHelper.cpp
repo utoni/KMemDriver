@@ -9,18 +9,113 @@
 #define MakePtr(cast, ptr, addValue) (cast)((DWORD_PTR)(ptr) + (DWORD_PTR)(addValue))
 #define MakeDelta(cast, x, y) (cast) ((DWORD_PTR)(x) - (DWORD_PTR)(y))
 
+static HMODULE sym_res_loadlib(IN const char * const module_name,
+	IN PVOID const symbol_resolver_user_data);
+static FARPROC sym_res_getproc(IN HMODULE const module_base,
+	IN const char * const proc_name, IN PVOID const symbol_resolver_user_data);
+static BOOL sym_res_freelib(IN HMODULE const module_base,
+	IN PVOID const symbol_resolver_user_data);
 
-bool LoadAndTestLibraryEntry(const char * const fullDllPath)
+const struct symbol_resolver_data sym_loadlib = symbol_resolver_data(sym_res_loadlib,
+	sym_res_getproc, sym_res_freelib);
+
+static HMODULE sym_res_loadlib(IN const char * const module_name,
+	IN PVOID const symbol_resolver_user_data)
 {
-	HMODULE TestDLLModule = LoadLibraryA(fullDllPath);
-	LibEntry_FN LibEntryProc = (LibEntry_FN)GetProcAddress(TestDLLModule, "LibEntry");
+	UNREFERENCED_PARAMETER(symbol_resolver_user_data);
+
+	return LoadLibraryA(module_name);
+}
+
+static FARPROC sym_res_getproc(IN HMODULE const module_base,
+	IN const char * const proc_name, IN PVOID const symbol_resolver_user_data)
+{
+	UNREFERENCED_PARAMETER(symbol_resolver_user_data);
+
+	return GetProcAddress(module_base, proc_name);
+}
+
+static BOOL sym_res_freelib(IN HMODULE const module_base, IN PVOID const symbol_resolver_user_data)
+{
+	UNREFERENCED_PARAMETER(symbol_resolver_user_data);
+
+	return FreeLibrary(module_base);
+}
+
+SymbolResolver::SymbolResolver(struct symbol_resolver_data const * const srd, PVOID symbol_resolver_user_Data)
+	: srd(srd), symbol_resolver_user_data(symbol_resolver_user_data)
+{
+}
+
+SymbolResolver::~SymbolResolver()
+{
+}
+
+HMODULE SymbolResolver::LoadLibrary(IN const char * const module_name)
+{
+	return srd->loadlib(module_name, symbol_resolver_user_data);
+}
+
+FARPROC SymbolResolver::GetProcAddress(IN HMODULE const module_base,
+	IN const char * const proc_name)
+{
+	return srd->getproc(module_base, proc_name, symbol_resolver_user_data);
+}
+
+BOOL SymbolResolver::FreeLibrary(IN HMODULE const module_base)
+{
+	return srd->freelib(module_base, symbol_resolver_user_data);
+}
+
+template<SIZE_T s>
+bool SymbolResolver::ResolveAllFunctionSymbols(ResolvedDllArray<s>& rda)
+{
+	bool result = true;
+
+	for (auto& unresolved : rda) {
+		unresolved.moduleBase = this->LoadLibrary(unresolved.baseDllName);
+		if (!unresolved.moduleBase) {
+			result = false;
+			continue;
+		}
+
+		unresolved.resolvedProc = this->GetProcAddress(unresolved.moduleBase,
+			unresolved.functionName);
+		if (!unresolved.resolvedProc) {
+			result = false;
+		}
+	}
+
+	return result;
+}
+
+template<SIZE_T s>
+bool SymbolResolver::CleanupAllFunctionSymbols(ResolvedDllArray<s>& rda)
+{
+	bool result = true;
+
+	for (auto& unresolved : rda) {
+		result = this->FreeLibrary(unresolved.moduleBase);
+		unresolved.moduleBase = NULL;
+		unresolved.resolvedProc = NULL;
+	}
+
+	return result;
+}
+
+bool SymbolResolver::LoadAndTestLibraryEntry(const char * const fullDllPath)
+{
+	HMODULE TestDLLModule = this->LoadLibrary(fullDllPath);
+	LibEntry_FN LibEntryProc = (LibEntry_FN)this->GetProcAddress(TestDLLModule,
+		"LibEntry");
 	if (LibEntryProc) {
-		LibEntryProc();
+		LibEntryProc(NULL);
 		return true;
 	}
 	else {
 		return false;
 	}
+	this->FreeLibrary(TestDLLModule);
 }
 
 bool VerifyPeHeader(UINT8 const * const buf, SIZE_T siz, IMAGE_NT_HEADERS ** const return_NTHeader)
@@ -49,14 +144,15 @@ bool VerifyPeHeader(UINT8 const * const buf, SIZE_T siz, IMAGE_NT_HEADERS ** con
 	return true;
 }
 
-static FARPROC GetRemoteProcAddress(HMODULE localMod, HMODULE remoteMod, char *func_name)
+static FARPROC GetRemoteProcAddress(SymbolResolver& symres,
+	HMODULE localMod, HMODULE remoteMod, char *func_name)
 {
 	/*
 	 * Account for potential differences in base address
 	 * of modules in different processes.
 	 */
 	ULONGLONG delta = MakeDelta(ULONGLONG, remoteMod, localMod);
-	return MakePtr(FARPROC, GetProcAddress(localMod, func_name), delta);
+	return MakePtr(FARPROC, symres.GetProcAddress(localMod, func_name), delta);
 }
 
 static HMODULE GetRemoteModuleHandle(char *module_name,
@@ -111,7 +207,8 @@ static LPVOID GetPtrFromRVA(DWORD rva, IMAGE_NT_HEADERS *pNTHeader, PBYTE imageB
 	return (PVOID)(imageBase + rva - delta);
 }
 
-DLLHelper::DLLHelper()
+DLLHelper::DLLHelper(SymbolResolver& symres)
+	: m_symbolResolver(symres)
 {
 }
 
@@ -233,7 +330,7 @@ bool DLLHelper::FixImports()
 	while ((module_name = (char *)GetPtrFromRVA((DWORD)(impDesc->Name), m_NTHeader,
 		(PBYTE)m_DLLPtr)))
 	{
-		HMODULE localMod = LoadLibraryA(module_name);
+		HMODULE localMod = m_symbolResolver.LoadLibrary(module_name);
 		HMODULE remoteMod = GetRemoteModuleHandle(module_name, modules);
 
 		if (!remoteMod) {
@@ -254,8 +351,8 @@ bool DLLHelper::FixImports()
 			iibn = (IMAGE_IMPORT_BY_NAME *)GetPtrFromRVA((DWORD)(itd->u1.AddressOfData),
 				m_NTHeader, (PBYTE)m_DLLPtr);
 
-			itd->u1.Function = MakePtr(ULONGLONG, GetRemoteProcAddress(localMod,
-				remoteMod, (char *)iibn->Name), 0);
+			itd->u1.Function = MakePtr(ULONGLONG, GetRemoteProcAddress(m_symbolResolver,
+				localMod, remoteMod, (char *)iibn->Name), 0);
 
 			itd++;
 		}

@@ -11,19 +11,14 @@
 #include <Windows.h>
 
 
-static bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
+static bool map_file_loadlib(SymbolResolver& symres, MODULE_DATA& module, PVOID * const buffer,
 	SIZE_T * const size, PVOID const user_ptr);
-static bool map_file_loadlib_cleanup(MODULE_DATA& module, PVOID buffer,
-	PVOID const user_ptr);
-static bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
-	SIZE_T * const size, PVOID const user_ptr);
-static bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer,
+static bool map_file_loadlib_cleanup(SymbolResolver& symres, MODULE_DATA& module, PVOID buffer,
 	PVOID const user_ptr);
 
 const struct map_file_data map_loadlib = map_file_data(map_file_loadlib, map_file_loadlib_cleanup, true);
-const struct map_file_data map_kmem = map_file_data(map_file_kmem, map_file_kmem_cleanup, false);
 
-bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
+bool map_file_loadlib(SymbolResolver& symres, MODULE_DATA& module, PVOID * const buffer,
 	SIZE_T * const size, PVOID const user_ptr)
 {
 	HMODULE hMod;
@@ -45,7 +40,7 @@ bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
 		}
 	}
 
-	hMod = LoadLibraryA(module.FullDllPath);
+	hMod = symres.LoadLibrary(module.FullDllPath);
 
 	if (user_data) {
 		if (dir_cookies.size() > 1) {
@@ -69,24 +64,14 @@ bool map_file_loadlib(MODULE_DATA& module, PVOID * const buffer,
 	}
 }
 
-bool map_file_loadlib_cleanup(MODULE_DATA& module, PVOID buffer, PVOID const user_ptr)
+bool map_file_loadlib_cleanup(SymbolResolver& symres, MODULE_DATA& module, PVOID buffer, PVOID const user_ptr)
 {
-	return FreeLibrary((HMODULE)buffer);
+	return symres.FreeLibrary((HMODULE)buffer);
 }
 
-bool map_file_kmem(MODULE_DATA& module, PVOID * const buffer,
-	SIZE_T * const size, PVOID const user_ptr)
-{
-	return false;
-}
-
-bool map_file_kmem_cleanup(MODULE_DATA& module, PVOID buffer, PVOID const user_ptr)
-{
-	return false;
-}
-
-PatternScanner::PatternScanner(struct map_file_data const * const mfd, PVOID map_file_user_data)
-	: mfd(mfd), map_file_user_data(map_file_user_data)
+PatternScanner::PatternScanner(SymbolResolver& symres,
+	struct map_file_data const * const mfd, PVOID map_file_user_data)
+	: m_symbolResolver(symres), mfd(mfd), map_file_user_data(map_file_user_data)
 {
 	if (!mfd) {
 		throw std::runtime_error("MapFileData was NULL");
@@ -137,14 +122,19 @@ bool PatternScanner::checkPattern(MODULE_DATA& module, const char * const patter
 	return true;
 }
 
-bool PatternScanner::doScan(UINT8 *buf, SIZE_T size, std::vector<UINT64>& foundOffsets)
+#include <iostream>
+bool PatternScanner::doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<UINT64>& foundOffsets)
 {
+	//std::wcout << "BLAAAAAAAAAAAAA" << std::endl;
+	//std::wstring bla(str_pattern.begin(), str_pattern.end());
+	//std::wcout << bla << std::endl;
+	std::cout << pattern << std::endl;
 	return false;
 }
 
-#include <iostream>
 bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 {
+	bool result;
 	std::string validPattern;
 	IMAGE_NT_HEADERS *ntHeader;
 	IMAGE_SECTION_HEADER *secHeader;
@@ -156,7 +146,7 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 		return false;
 	}
 
-	if (!mfd->mapfile(module, (PVOID *)&mappedBuffer, &mappedSize, map_file_user_data))
+	if (!mfd->mapfile(m_symbolResolver, module, (PVOID *)&mappedBuffer, &mappedSize, map_file_user_data))
 	{
 		return false;
 	}
@@ -180,20 +170,16 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern)
 			virtualSize = secHeader->VirtualAddress - virtualSize;
 			nBytes += virtualSize;
 		}
+		result = false;
 	}
 	else {
-		doScan(mappedBuffer, mappedSize, foundOffsets);
+		result = doScan(validPattern, mappedBuffer, mappedSize, foundOffsets);
 	}
 
-	if (!mfd->mapcleanup(module, mappedBuffer, map_file_user_data))
+	if (!mfd->mapcleanup(m_symbolResolver, module, mappedBuffer, map_file_user_data))
 	{
 		return false;
 	}
 
-	//std::wcout << "BLAAAAAAAAAAAAA" << std::endl;
-	//std::wstring bla(str_pattern.begin(), str_pattern.end());
-	//std::wcout << bla << std::endl;
-	std::cout << validPattern << std::endl;
-
-	return true;
+	return result;
 }

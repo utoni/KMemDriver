@@ -304,7 +304,8 @@ class Vec3_tpl<float>   size(12):
 									std::wcout << L"VUnlink failed" << std::endl;
 								}
 #endif						
-								DLLHelper dll;
+								SymbolResolver sresolv;
+								DLLHelper dll(sresolv);
 								if (!dll.Init(targetPID, "./TestDLL.dll")) {
 									std::wcout << L"DLL Init failed" << std::endl;
 								}
@@ -351,7 +352,7 @@ class Vec3_tpl<float>   size(12):
 										<< std::wstring(dir.begin(), dir.end()) << std::endl;
 								}
 
-								PatternScanner pscan(&map_loadlib, &llua);
+								PatternScanner pscan(sresolv, &map_loadlib, &llua);
 								pscan.Scan(md, "01 23 45 67 89 ?? ab cd ef ?? AB CD EF FF");
 
 								// TODO: get gEnv with 0F B7 00 48 83 C4 28 C3
