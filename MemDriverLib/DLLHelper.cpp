@@ -363,7 +363,7 @@ bool DLLHelper::FixRelocs()
 {
 	unsigned long long ImageBase;
 	unsigned int nBytes = 0;
-	unsigned long delta;
+	unsigned long long delta;
 	IMAGE_BASE_RELOCATION *reloc;
 
 	if (!m_TargetPID || !m_TargetBaseAddress || !m_NTHeader ||
@@ -384,12 +384,12 @@ bool DLLHelper::FixRelocs()
 		(DWORD)(m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_BASERELOC].VirtualAddress),
 		m_NTHeader, (PBYTE)m_DLLPtr);
 	ImageBase = m_NTHeader->OptionalHeader.ImageBase;
-	delta = MakeDelta(unsigned long, m_TargetBaseAddress, ImageBase);
+	delta = MakeDelta(unsigned long long, m_TargetBaseAddress, ImageBase);
 
 	while (1)
 	{
-		unsigned long *locBase =
-			(unsigned long *)GetPtrFromRVA((DWORD)(reloc->VirtualAddress), m_NTHeader,
+		unsigned long long *locBase =
+			(unsigned long long *)GetPtrFromRVA((DWORD)(reloc->VirtualAddress), m_NTHeader,
 			(PBYTE)m_DLLPtr);
 		unsigned int numRelocs = (reloc->SizeOfBlock - sizeof(IMAGE_BASE_RELOCATION)) / sizeof(WORD);
 
@@ -401,7 +401,7 @@ bool DLLHelper::FixRelocs()
 		for (unsigned int i = 0; i < numRelocs; i++)
 		{
 			if (((*locData >> 12) & IMAGE_REL_BASED_HIGHLOW))
-				*MakePtr(unsigned long *, locBase, (*locData & 0x0FFF)) += delta;
+				*MakePtr(unsigned long long *, locBase, (*locData & 0x0FFF)) += delta;
 
 			locData++;
 		}
