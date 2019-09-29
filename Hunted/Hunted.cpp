@@ -337,9 +337,6 @@ class Vec3_tpl<float>   size(12):
 
 								PVOID targetAddr = (PVOID)(dll.GetBaseAddress());
 								std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
-								if (!ki.VUnlink(targetPID, targetAddr)) {
-									std::wcout << L"VUnlink failed" << std::endl;
-								}
 
 								UINT64 globalEnvAddr = 0;
 								for (MODULE_DATA& md : modules) {
@@ -361,7 +358,7 @@ class Vec3_tpl<float>   size(12):
 										std::vector<SIZE_T> foundAddresses;
 										pscan.Scan(md, "48 8B 48 20 48 8B 01 FF 90 20 01 00 00", foundAddresses);
 										for (auto& addr : foundAddresses) {
-											std::wcout << "Addr: " << addr << std::endl;
+											std::wcout << "Addr: " << addr << ", Content: ";
 											BYTE content[32];
 											KMemoryBuf::Rpm<sizeof content>(targetPID, (PVOID)addr, &content[0]);
 											printBuf(content, sizeof content, 32);
@@ -423,6 +420,10 @@ class Vec3_tpl<float>   size(12):
 								/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +9 */
 								KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
 #endif
+								Sleep(1000);
+								if (!ki.VUnlink(targetPID, targetAddr)) {
+									std::wcout << L"VUnlink failed" << std::endl;
+								}
 							}
 #endif
 #if 0

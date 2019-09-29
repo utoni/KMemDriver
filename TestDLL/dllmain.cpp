@@ -5,9 +5,9 @@
 #include <sstream>
 #include <array>
 
-#pragma comment(lib, "vcruntime.lib")
+EXTERN_C BOOL WINAPI _CRT_INIT(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 
-
+#if 0
 struct ResolvedDllEntry {
 	const char * const baseDllName;
 	const char * const functionName;
@@ -170,7 +170,7 @@ static bool resolve_all_symbols(void) {
 
 	return result;
 }
-
+#endif
 
 void APIENTRY LibEntry(PVOID user_ptr)
 {
@@ -178,7 +178,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 
 	if (firstEntry) {
 		firstEntry = false;
-
+#if 0
 		if (!resolve_all_symbols()) {
 			MessageBoxA(NULL,
 				"COULD NOT RESOLVE ALL DYNAMIC DLL SYMBOLS !!!",
@@ -188,7 +188,10 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		}
 		void *bla = malloc(10);
 		free(bla);
+#endif
 #if 1
+		HINSTANCE addr = GetModuleHandle(NULL);
+		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
 		std::string text;
 		std::vector<DWORD> blubb;
 		text = "DllMain from TestDLL: ";
@@ -198,6 +201,12 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		//muh << "bla" << "," << "blubb";
 		MessageBoxA(NULL,
 			text.c_str(),
+			"TestDLL Notification",
+			MB_OK | MB_ICONINFORMATION);
+		char buf[128];
+		snprintf(buf, sizeof buf, "_%s_\n", "bla");
+		MessageBoxA(NULL,
+			buf,
 			"TestDLL Notification",
 			MB_OK | MB_ICONINFORMATION);
 #else
