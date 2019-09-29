@@ -124,6 +124,26 @@ WRAPPER_FUNCTION(SYM_WCSNLEN, wcsnlen, size_t, const wchar_t *str, size_t n) {
 	return RUN_REAL_FN(SYM_WCSNLEN, str, n);
 }
 
+extern "C"
+void __vcrt_initialize() {}
+extern "C"
+void __vcrt_uninitialize() {}
+extern "C"
+void __vcrt_uninitialize_critical() {}
+extern "C"
+void __vcrt_thread_attach() {}
+extern "C"
+void __vcrt_thread_detach() {}
+extern "C"
+void __acrt_initialize() {}
+extern "C"
+void __acrt_uninitialize() {}
+extern "C"
+void __acrt_uninitialize_critical() {}
+extern "C"
+void __acrt_thread_attach() {}
+extern "C"
+void __acrt_thread_detach() {}
 
 extern "C"
 static bool resolve_all_symbols(void) {
@@ -174,7 +194,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		text = "DllMain from TestDLL: ";
 		blubb.push_back(1);
 		blubb.push_back(2);
-		std::stringstream muh;
+		//std::stringstream muh;
 		//muh << "bla" << "," << "blubb";
 		MessageBoxA(NULL,
 			text.c_str(),
