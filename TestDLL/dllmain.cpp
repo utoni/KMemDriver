@@ -26,8 +26,11 @@ static struct ResolvedDllEntry resolved_smybols[] = {
 	MSVCRT_ENTRY("_invalid_parameter_noinfo_noreturn"),
 	MSVCRT_ENTRY("abort"), MSVCRT_ENTRY("calloc"), MSVCRT_ENTRY("frexp"),
 	MSVCRT_ENTRY("islower"), MSVCRT_ENTRY("isspace"), MSVCRT_ENTRY("isupper"),
+	MSVCRT_ENTRY("tolower"),
 	MSVCRT_ENTRY("ldexp"), MSVCRT_ENTRY("localeconv"), MSVCRT_ENTRY("__pctype_func"),
-	MSVCRT_ENTRY("___lc_locale_name_func"), MSVCRT_ENTRY("___lc_codepage_func")
+	MSVCRT_ENTRY("___lc_locale_name_func"), MSVCRT_ENTRY("___lc_codepage_func"),
+	MSVCRT_ENTRY("setlocale"),
+	MSVCRT_ENTRY("_wcsdup"), MSVCRT_ENTRY("wcslen"), MSVCRT_ENTRY("wcsnlen")
 };
 static const SIZE_T resolved_symbols_size =
 sizeof(resolved_smybols) / sizeof(resolved_smybols[0]);
@@ -38,8 +41,11 @@ enum SymbolIndex {
 	SYM_INVALID_PARAMETER_NOINFO_NORETURN,
 	SYM_ABORT, SYM_CALLOC, SYM_FREXP,
 	SYM_ISLOWER, SYM_ISSPACE, SYM_ISUPPER,
+	SYM_TOLOWER,
 	SYM_LDEXP, SYM_LOCALECONV, SYM_PCTYPE,
 	SYM_LC_LOCALE_NAME, SYM_LC_CODEPAGE,
+	SYM_SETLOCALE,
+	SYM_WCSDUP, SYM_WCSLEN, SYM_WCSNLEN,
 	NUMBER_OF_SYMBOLS
 };
 
@@ -87,6 +93,9 @@ WRAPPER_FUNCTION(SYM_ISSPACE, isspace, int, int c) {
 WRAPPER_FUNCTION(SYM_ISUPPER, isupper, int, int c) {
 	return RUN_REAL_FN(SYM_ISUPPER, c);
 }
+WRAPPER_FUNCTION(SYM_TOLOWER, tolower, int, int c) {
+	return RUN_REAL_FN(SYM_TOLOWER, c);
+}
 WRAPPER_FUNCTION(SYM_LDEXP, ldexp, double, double x, int exp) {
 	return RUN_REAL_FN(SYM_LDEXP, x, exp);
 }
@@ -102,7 +111,18 @@ WRAPPER_FUNCTION(SYM_LC_LOCALE_NAME, ___lc_locale_name_func, wchar_t **, void) {
 WRAPPER_FUNCTION(SYM_LC_CODEPAGE, ___lc_codepage_func, UINT, void) {
 	return RUN_REAL_FN(SYM_LC_CODEPAGE);
 }
-
+WRAPPER_FUNCTION(SYM_SETLOCALE, setlocale, char *, int category, const char *locale) {
+	return RUN_REAL_FN(SYM_SETLOCALE, category, locale);
+}
+WRAPPER_FUNCTION(SYM_WCSDUP, _wcsdup, wchar_t *, const wchar_t *src) {
+	return RUN_REAL_FN(SYM_WCSDUP, src);
+}
+WRAPPER_FUNCTION(SYM_WCSLEN, _wcslen, size_t, const wchar_t *str) {
+	return RUN_REAL_FN(SYM_WCSLEN, str);
+}
+WRAPPER_FUNCTION(SYM_WCSNLEN, wcsnlen, size_t, const wchar_t *str, size_t n) {
+	return RUN_REAL_FN(SYM_WCSNLEN, str, n);
+}
 
 
 extern "C"
@@ -110,11 +130,16 @@ static bool resolve_all_symbols(void) {
 	bool result = true;
 
 	for (SIZE_T i = 0; i < 3; ++i) {
+		if (resolved_smybols[i].moduleBase) {
+			result = false;
+		}
 		resolved_smybols[i].moduleBase = LoadLibraryA(resolved_smybols[i].baseDllName);
-
 		if (!resolved_smybols[i].moduleBase) {
 			result = false;
 			continue;
+		}
+		if (resolved_smybols[i].resolvedProc) {
+			result = false;
 		}
 		resolved_smybols[i].resolvedProc = GetProcAddress(resolved_smybols[i].moduleBase,
 			resolved_smybols[i].functionName);
@@ -149,7 +174,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		text = "DllMain from TestDLL: ";
 		blubb.push_back(1);
 		blubb.push_back(2);
-		//std::stringstream muh;
+		std::stringstream muh;
 		//muh << "bla" << "," << "blubb";
 		MessageBoxA(NULL,
 			text.c_str(),
