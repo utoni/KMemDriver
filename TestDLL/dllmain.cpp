@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "HuntClasses.h"
 
 #include <vector>
 #include <string>
@@ -203,8 +204,17 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			text.c_str(),
 			"TestDLL Notification",
 			MB_OK | MB_ICONINFORMATION);
+
+		UINT64 pEntSys = (UINT64)user_ptr;
+		pEntSys = *(UINT64*)pEntSys;
+
+		IEntitySystem * iEnt = *(IEntitySystem **)user_ptr;
+
 		char buf[128];
-		snprintf(buf, sizeof buf, "_%s_\n", "bla");
+		snprintf(buf, sizeof buf, "gEnv: %p | %p | %u | %u | %p | %p\n", user_ptr,
+			(PVOID)(*(UINT64*)(pEntSys + 104)), *(BOOL*)(pEntSys + 786974),
+			*(UINT32*)(pEntSys + 786970), (PVOID)(*(UINT64*)(pEntSys + 786962)),
+			iEnt->GetSystem());
 		MessageBoxA(NULL,
 			buf,
 			"TestDLL Notification",
