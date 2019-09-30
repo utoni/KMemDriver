@@ -205,16 +205,39 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			"TestDLL Notification",
 			MB_OK | MB_ICONINFORMATION);
 
-		UINT64 pEntSys = (UINT64)user_ptr;
-		pEntSys = *(UINT64*)pEntSys;
-
+		UINT64 pEntSys = *(UINT64*)user_ptr;
 		IEntitySystem * iEnt = *(IEntitySystem **)user_ptr;
 
+#define PENTITYSYSTEM_ISYSTEM_OFFSET 104
+		if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: ISystem interface instance not equal: MEMBER[%p] != GETSYSTEM[%p]\n",
+				(PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)), iEnt->GetSystem());
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
+		if ((PVOID)pEntSys != iEnt->GetSystem()->GetIEntitySystem()) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != GETENTITYSYSTEM[%p]\n",
+				(PVOID)pEntSys, iEnt->GetSystem()->GetIEntitySystem());
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
 		char buf[128];
-		snprintf(buf, sizeof buf, "gEnv: %p | %p | %u | %u | %p | %p\n", user_ptr,
-			(PVOID)(*(UINT64*)(pEntSys + 104)), *(BOOL*)(pEntSys + 786974),
-			*(UINT32*)(pEntSys + 786970), (PVOID)(*(UINT64*)(pEntSys + 786962)),
-			iEnt->GetSystem());
+		snprintf(buf, sizeof buf, "---%p---%p---%p---%u------\n",
+			iEnt->GetSystem()->GetGlobalEnvironment(), (PVOID)pEntSys,
+			iEnt->GetSystem()->GetIEntitySystem(),
+			iEnt->GetSystem()->GetUsedMemory());
 		MessageBoxA(NULL,
 			buf,
 			"TestDLL Notification",
