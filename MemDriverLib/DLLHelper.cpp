@@ -276,23 +276,23 @@ bool DLLHelper::VerifyHeader()
 	return VerifyPeHeader(m_DLLPtr, m_DLLSize, &m_NTHeader);
 }
 
-bool DLLHelper::InitTargetMemory()
+bool DLLHelper::InitTargetMemory(UINT64 preferredVirtualAddress)
 {
 	if (!m_DLLPtr || !m_NTHeader) {
 		return false;
 	}
 
-	PVOID wantedBaseAddr = m_TargetBaseAddress;
+	PVOID wantedAddress = (PVOID)preferredVirtualAddress;
 	SIZE_T wantedSize = m_NTHeader->OptionalHeader.SizeOfImage;
 	KInterface& ki = KInterface::getInstance();
-	if (!ki.VAlloc(m_TargetPID, &wantedBaseAddr, &wantedSize, PAGE_EXECUTE_READWRITE)) {
+	if (!ki.VAlloc(m_TargetPID, &wantedAddress, &wantedSize, PAGE_EXECUTE_READWRITE)) {
 		return false;
 	}
 	if (wantedSize < m_NTHeader->OptionalHeader.SizeOfImage) {
 		return false;
 	}
 
-	m_TargetBaseAddress = wantedBaseAddr;
+	m_TargetBaseAddress = wantedAddress;
 	return true;
 }
 

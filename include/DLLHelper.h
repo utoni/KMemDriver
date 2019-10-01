@@ -68,7 +68,7 @@ public:
 
 	bool Init(HANDLE targetPID, const char * const fullDllPath);
 	bool VerifyHeader();
-	bool InitTargetMemory();
+	bool InitTargetMemory(UINT64 preferredVirtualAddress = 0x0);
 	bool HasImports() {
 		return m_NTHeader &&
 			m_NTHeader->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_IMPORT].Size;
