@@ -141,32 +141,11 @@ int wmain(int argc, wchar_t **argv)
 						sizeof md.BaseDllName))
 					{
 						/* "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutCEntitySystem C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryEntitySystem\EntitySystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" */
-#if 1
-/* Found: void CEntitySystem::LoadInternalState(IDataReadStream& reader) */
-						UINT64 g_pEnv = KMemory::Rpm<UINT64>(targetPID,
-							(PVOID)((UINT64)md.DllBase + 0x28C3F8));
-						std::wcout << L"g_pEnv..............: 0x" << WHEXOUT << g_pEnv << std::endl;
-#if 0
-						// ?? ?? ?? ?? ?? ?? 85 C0 0F 84 5E 02 00 00
-						BYTE aa[] = { 0x90, 0x90, 0x90, 0x90, 0x31, 0xC0 };
-						KMemoryBuf::Wpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &aa[0]);
-						BYTE bb[sizeof aa] = {};
-						KMemoryBuf::Rpm<sizeof aa>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &bb[0]);
-						printBuf(bb, sizeof bb, 32);
-#else
+
 						static bool first = true;
 						if (first) {
 							first = false;
-#if 0
-							PVOID targetAddr = (PVOID)((UINT64)NULL);
-							SIZE_T targetSize = 4096;
-							if (!ki.VAlloc(targetPID, &targetAddr, &targetSize, PAGE_EXECUTE_READWRITE)) {
-								std::wcout << L"VAlloc failed" << std::endl;
-							}
-							if (!ki.VUnlink(targetPID, targetAddr)) {
-								std::wcout << L"VUnlink failed" << std::endl;
-							}
-#endif						
+
 							SymbolResolver sresolv;
 							DLLHelper dll(sresolv);
 							if (!dll.Init(targetPID, "./TestDLL.dll")) {
@@ -175,7 +154,7 @@ int wmain(int argc, wchar_t **argv)
 							if (!dll.VerifyHeader()) {
 								std::wcout << L"DLL VerifyHeader failed" << std::endl;
 							}
-							if (!dll.InitTargetMemory()) {
+							if (!dll.InitTargetMemory(/* 0x7ffe00000000 */)) {
 								std::wcout << L"DLL InitTargetMemory failed" << std::endl;
 							}
 							if (!dll.HasImports())
@@ -201,8 +180,8 @@ int wmain(int argc, wchar_t **argv)
 							PVOID targetAddr = (PVOID)(dll.GetBaseAddress());
 							std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
 
-							UINT64 globalEnvAddr = 0;
-							globalEnvAddr = (UINT64)md.DllBase + 0x28C3F8;
+							UINT64 g_pEnvSys = 0;
+							g_pEnvSys = (UINT64)md.DllBase + 0x28C3F8;
 
 							for (MODULE_DATA& md : modules) {
 								if (!strncmp(md.BaseDllName, "CryAction.dll",
@@ -270,7 +249,7 @@ int wmain(int argc, wchar_t **argv)
 										  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 										  /* jmp rax */
 										  0xFF, 0xE0 };
-							*(UINT64 *)((BYTE *)cc + 31) = globalEnvAddr;
+							*(UINT64 *)((BYTE *)cc + 31) = g_pEnvSys;
 							*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +275 */
 							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
@@ -278,20 +257,18 @@ int wmain(int argc, wchar_t **argv)
 							printBuf(cc, sizeof cc, 32);
 							KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
 
-#if 1
 							BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 							*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 							printBuf(dd, sizeof dd, 32);
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +9 */
 							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
-#endif
+#if 0
 							Sleep(1000);
 							if (!ki.VUnlink(targetPID, targetAddr)) {
 								std::wcout << L"VUnlink failed" << std::endl;
 							}
+#endif
 						}
-#endif
-#endif
 					}
 				}
 			}
