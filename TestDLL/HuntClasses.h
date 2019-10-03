@@ -169,6 +169,7 @@ template<class T> struct Color_tpl
 	T r, g, b, a;
 };
 typedef Color_tpl<float> ColorF;
+typedef Color_tpl<UINT8> ColorB;
 
 enum EDrawTextFlags : UINT32
 {
@@ -198,7 +199,7 @@ public:
 	virtual void DrawPoint(void) = 0;
 	virtual void DrawPoints(void) = 0;
 	virtual void DrawPoints(int) = 0;
-	virtual void DrawLine(void) = 0;
+	virtual void DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) = 0;
 	virtual void DrawLines(void) = 0;
 	virtual void DrawLines(int) = 0;
 	virtual void DrawLines(int, int) = 0;
@@ -228,7 +229,7 @@ public:
 	virtual int PushMatrix(void) = 0;
 	virtual void PushImage(void) = 0;
 	virtual int SetTexture(void) { return -1; }
-	virtual void GetMatrix() = 0;
+	virtual PVOID GetMatrix() = 0;
 	virtual void SetMatrixIndex(void) = 0;
 	virtual void Submit(void) = 0;
 	virtual void SetOrthographicProjection(void) = 0;
@@ -262,6 +263,203 @@ public:
 
 		RenderText(pos, ti, format, args);
 	}
+
+	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* label_text, ...)
+	{
+		va_list args;
+		va_start(args, label_text);
+		Draw2dLabel(x, y, font_size, fColor, bCenter, label_text, args);
+		va_end(args);
+	}
+};
+
+struct IRenderer//: public IRendererCallbackServer
+{
+	virtual ~IRenderer() {}
+	virtual void fn_00(void) = 0;
+	virtual void fn_01(void) = 0;
+	virtual void fn_02(void) = 0;
+	virtual void fn_03(void) = 0;
+	virtual void fn_04(void) = 0;
+	virtual void fn_05(void) = 0;
+	virtual void fn_06(void) = 0;
+	virtual void fn_07(void) = 0;
+	virtual void fn_08(void) = 0;
+	virtual void fn_09(void) = 0;
+	virtual void fn_10(void) = 0;
+	virtual void fn_11(void) = 0;
+	virtual int  GetFeatures() = 0;
+	virtual void fn_12(void) = 0;
+	virtual int  GetNumGeomInstances() = 0;
+	virtual int  GetNumGeomInstanceDrawCalls() = 0;
+	virtual int  GetCurrentNumberOfDrawCalls() = 0;
+	virtual void fn_13(void) = 0;
+	virtual void fn_14(void) = 0;
+	virtual void fn_15(void) = 0;
+	virtual void fn_16(void) = 0;
+	virtual void fn_17(void) = 0;
+	virtual void fn_18(void) = 0;
+	virtual void fn_19(void) = 0;
+	virtual void fn_20(void) = 0;
+	virtual void fn_21(void) = 0;
+	virtual void fn_22(void) = 0;
+	virtual void fn_23(void) = 0;
+	virtual void fn_24(void) = 0;
+	virtual void fn_25(void) = 0;
+	virtual void fn_26(void) = 0;
+	virtual void fn_27(void) = 0;
+	virtual void fn_28(void) = 0;
+	virtual void fn_29(void) = 0;
+	virtual void fn_30(void) = 0;
+	virtual void fn_31(void) = 0;
+	virtual void fn_32(void) = 0;
+	virtual void fn_33(void) = 0;
+	virtual void fn_34(void) = 0;
+	virtual void fn_35(void) = 0;
+	virtual void fn_36(void) = 0;
+	virtual void fn_37(void) = 0;
+	virtual int GetWhiteTextureId() const = 0;
+	virtual void fn_38(void) = 0;
+	virtual void fn_39(void) = 0;
+	virtual int GetHeight() const = 0;
+	virtual int GetWidth() const = 0;
+	virtual float GetPixelAspectRatio() const = 0;
+	virtual int GetOverlayHeight() const = 0;
+	virtual int GetOverlayWidth() const = 0;
+	virtual void GetMemoryUsage(PVOID Sizer) = 0;
+	virtual void GetBandwidthStats(float* fBandwidthRequested) = 0;
+	virtual void fn_40(void) = 0;
+	virtual void fn_41(void) = 0;
+	virtual void fn_42(void) = 0;
+	virtual int GetColorBpp() = 0;
+	virtual int GetDepthBpp() = 0;
+	virtual int GetStencilBpp() = 0;
+	virtual bool IsStereoEnabled() const = 0;
+	virtual float GetNearestRangeMax() const = 0;
+	virtual bool ProjectToScreen(
+		float ptx, float pty, float ptz,
+		float* sx, float* sy, float* sz) = 0;
+};
+
+struct IGameFramework
+{
+	virtual void RegisterFactory(const char* name, PVOID, bool isAI) = 0;
+	virtual void RegisterFactory(const char* name, PVOID*, bool isAI) = 0;
+	virtual void RegisterFactory(const char* name, PVOID**, bool isAI) = 0;
+	virtual void RegisterFactory(const char* name, PVOID***, bool isAI) = 0;
+	virtual void RegisterFactory(const char* name, PVOID****, bool isAI) = 0;
+	virtual void RegisterFactory(const char* name, PVOID*****, bool isAI) = 0;
+
+	virtual ~IGameFramework() {}
+	virtual void ShutDown() = 0;
+	virtual void PreSystemUpdate() = 0;
+	virtual bool PostSystemUpdate(bool hasFocus, int updateFlags) = 0;
+	virtual void PreFinalizeCamera(int updateFlags) = 0;
+	virtual void PreRender() = 0;
+	virtual void PostRender(int updateFlags) = 0;
+	virtual void PostRenderSubmit() = 0;
+	virtual void InitGameType(bool multiplayer, bool fromInit) = 0;
+	virtual void PrePhysicsUpdate() = 0;
+	virtual void Reset(bool clients) = 0;
+	virtual void PauseGame(bool pause, bool force, unsigned int nFadeOutInMS = 0) = 0;
+	virtual bool IsGamePaused() = 0;
+	virtual bool IsGameStarted() = 0;
+	virtual ISystem* GetISystem() = 0;
+	virtual PVOID GetILanQueryListener() = 0;
+	virtual PVOID GetIUIDraw() = 0;
+	virtual PVOID GetMannequinInterface() = 0;
+	virtual PVOID GetIGameObjectSystem() = 0;
+	virtual PVOID GetILevelSystem() = 0;
+	virtual PVOID GetIActorSystem() = 0;
+	virtual PVOID GetIItemSystem() = 0;
+	virtual PVOID GetIBreakReplicator() = 0;
+	virtual PVOID GetIActionMapManager() = 0;
+	virtual PVOID GetIViewSystem() = 0;
+	virtual PVOID GetIGameplayRecorder() = 0;
+	virtual PVOID GetIVehicleSystem() = 0;
+	virtual PVOID GetIGameRulesSystem() = 0;
+	virtual PVOID GetIFlowSystem() = 0;
+	virtual PVOID GetIGameTokenSystem() = 0;
+	virtual PVOID GetIEffectSystem() = 0;
+	virtual PVOID GetIMaterialEffects() = 0;
+	virtual PVOID GetIPlayerProfileManager() = 0;
+	virtual PVOID GetIRealTimeRemoteUpdate() = 0;
+	virtual PVOID GetIGameStatistics() = 0;
+	virtual PVOID GetICooperativeAnimationManager() = 0;
+	virtual PVOID GetICheckpointSystem() = 0;
+	virtual PVOID GetIForceFeedbackSystem() const = 0;
+	virtual PVOID GetICustomActionManager() const = 0;
+	virtual PVOID GetICustomEventManager() const = 0;
+	virtual PVOID GetIGameSessionHandler() = 0;
+	virtual PVOID GetISharedParamsManager() = 0;
+	virtual PVOID GetIGame() = 0;
+	virtual PVOID GetGameModuleHandle() const = 0;
+	virtual bool StartGameContext(const PVOID pGameStartParams) = 0;
+	virtual bool ChangeGameContext(const PVOID pGameContextParams) = 0;
+	virtual void EndGameContext() = 0;
+	virtual bool StartedGameContext() const = 0;
+	virtual bool StartingGameContext() const = 0;
+	virtual void SetGameSessionHandler(PVOID pSessionHandler) = 0;
+	virtual bool BlockingSpawnPlayer() = 0;
+	virtual void FlushBreakableObjects() = 0;
+	virtual void ResetBrokenGameObjects() = 0;
+	virtual void CloneBrokenObjectsAndRevertToStateAtTime(INT32 iFirstBreakEventIndex, UINT16* pBreakEventIndices, INT32* iNumBreakEvents, PVOID* outClonedNodes, INT32* iNumClonedNodes, PVOID renderNodeLookup) = 0;
+	virtual void ApplySingleProceduralBreakFromEventIndex(UINT16 uBreakEventIndex, PVOID renderNodeLookup) = 0;
+	virtual void UnhideBrokenObjectsByIndex(UINT16* ObjectIndicies, INT32 iNumObjectIndices) = 0;
+	virtual void InitEditor(PVOID pGameToEditor) = 0;
+	virtual void SetEditorLevel(const char* levelName, const char* levelFolder) = 0;
+	virtual void GetEditorLevel(char** levelName, char** levelFolder) = 0;
+	virtual void BeginLanQuery() = 0;
+	virtual void EndCurrentQuery() = 0;
+	virtual PVOID GetClientActor() const = 0;
+	virtual int GetClientActorId() const = 0;
+	virtual PVOID GetClientEntity() const = 0;
+	virtual int GetClientEntityId() const = 0;
+	virtual PVOID GetClientChannel() const = 0;
+	virtual int GetServerTime() = 0;
+	virtual UINT16 GetGameChannelId(PVOID pNetChannel) = 0;
+	virtual bool IsChannelOnHold(UINT16 channelId) = 0;
+	virtual PVOID GetNetChannel(UINT16 channelId) = 0;
+	virtual void SetServerChannelPlayerId(UINT16 channelId, int id) = 0;
+	virtual const PVOID GetEntitySchedulerProfiles(int* pEnt) = 0;
+	virtual PVOID GetGameObject(int id) = 0;
+	virtual bool GetNetworkSafeClassId(UINT16& id, const char* className) = 0;
+	virtual bool GetNetworkSafeClassName(char* className, size_t maxn, UINT16 id) = 0;
+	virtual PVOID QueryGameObjectExtension(int id, const char* name) = 0;
+	virtual PVOID GetITimeDemoRecorder() const = 0;
+	virtual PVOID SetITimeDemoRecorder(PVOID pRecorder) = 0;
+	virtual bool SaveGame(const char* path, bool quick, bool bForceImmediate, int reason, bool ignoreDelay = false, const char* checkPoint = NULL) = 0;
+	virtual int LoadGame(const char* path, bool quick = false, bool ignoreDelay = false) = 0;
+	virtual int CreateSaveGameName() = 0;
+	virtual void ScheduleEndLevel(const char* nextLevel) = 0;
+	virtual void ScheduleEndLevelNow(const char* nextLevel) = 0;
+	virtual void OnEditorSetGameMode(int iMode) = 0;
+	virtual bool IsEditing() = 0;
+	virtual bool IsInLevelLoad() = 0;
+	virtual bool IsLoadingSaveGame() = 0;
+	virtual bool IsInTimeDemo() = 0;
+	virtual bool IsTimeDemoRecording() = 0;
+	virtual void AllowSave(bool bAllow = true) = 0;
+	virtual void AllowLoad(bool bAllow = true) = 0;
+	virtual bool CanSave() = 0;
+	virtual bool CanLoad() = 0;
+	virtual PVOID GetSerializeHelper() const = 0;
+	virtual bool CanCheat() = 0;
+	virtual const char* GetLevelName() = 0;
+	virtual void GetAbsLevelPath(char* pPathBuffer, UINT32 pathBufferSize) = 0;
+	virtual PVOID GetIPersistantDebug() = 0;
+	virtual void AddBreakEventListener(PVOID pListener) = 0;
+	virtual void RemoveBreakEventListener(PVOID pListener) = 0;
+	virtual void RegisterListener(PVOID pGameFrameworkListener, const char* name, int eFrameworkListenerPriority) = 0;
+	virtual void UnregisterListener(PVOID pGameFrameworkListener) = 0;
+	virtual PVOID GetServerNetNub() = 0;
+	virtual PVOID GetIGameServerNub() = 0;
+	virtual PVOID GetClientNetNub() = 0;
+	virtual PVOID GetIGameClientNub() = 0;
+	virtual void SetGameGUID(const char* gameGUID) = 0;
+	virtual const char* GetGameGUID() = 0;
+	virtual PVOID GetNetContext() = 0;
+	virtual void GetMemoryUsage(PVOID pSizer) const = 0;
 };
 
 struct SSystemGlobalEnvironment {
@@ -281,7 +479,7 @@ struct SSystemGlobalEnvironment {
 	UINT64 pOpticsManager;
 	UINT64 pTimer;
 	UINT64 pCryFont;
-	UINT64 pGameFramework;
+	IGameFramework* pGameFramework;
 	UINT64 pLocalMemoryUsage;
 	IEntitySystem* pEntitySystem;
 	UINT64 pConsole;
@@ -293,8 +491,8 @@ struct SSystemGlobalEnvironment {
 	UINT64 pCodeCheckpointMgr;
 	UINT64 pMovieSystem;
 	UINT64 pNameTable;
-	UINT64 pRenderer;
-	UINT64 pAuxGeomRenderer;
+	IRenderer* pRenderer;
+	IRenderAuxGeom* pAuxGeomRenderer;
 	UINT64 pHardwareMouse;
 	UINT64 pMaterialEffects;
 	UINT64 pJobManager;
@@ -347,12 +545,6 @@ struct SSystemGlobalEnvironment {
 
 struct ISystem
 {
-	struct ILoadingProgressListener
-	{
-		virtual ~ILoadingProgressListener() {}
-		virtual void OnLoadingProgress(int steps) = 0;
-	};
-
 	virtual ~ISystem() {}
 	virtual PVOID GetCVarsWhiteListConfigSink() const = 0;
 	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() = 0;
@@ -434,7 +626,7 @@ struct ISystem
 	virtual PVOID GetHWND() = 0;
 	virtual PVOID GetActiveHWND() = 0;
 	virtual PVOID GetINetwork() = 0;
-	virtual PVOID GetIRenderer() = 0;
+	virtual IRenderer* GetIRenderer() = 0;
 	virtual PVOID GetIInput() = 0;
 	virtual PVOID GetITimer() = 0;
 	virtual PVOID GetIThreadManager() = 0;
