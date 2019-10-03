@@ -260,23 +260,28 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			return;
 		}
 
+		if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pSystem) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
 		char buf[128];
-		snprintf(buf, sizeof buf, "---%X,%X,%X,%X,%X---%s---%X,%X,%X,%X,%X---%p---\n",
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsGamePaused(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsGameStarted(),
-
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanSave(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanLoad(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanCheat(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetLevelName(),
-
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsEditing(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInLevelLoad(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsLoadingSaveGame(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInTimeDemo(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsTimeDemoRecording(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIPersistantDebug()
-			);
+		snprintf(buf, sizeof buf, "---%p,%p---%d,%d----%X,%X,%X---\n",
+			iEnt->GetSystem(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pSystem,
+			iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer->GetWidth(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer->GetOverlayWidth(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->bServer,
+			iEnt->GetSystem()->GetGlobalEnvironment()->bMultiplayer,
+			iEnt->GetSystem()->GetGlobalEnvironment()->bHostMigrating
+		);
 		MessageBoxA(NULL,
 			buf,
 			"TestDLL Notification",
