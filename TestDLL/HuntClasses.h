@@ -171,106 +171,30 @@ template<class T> struct Color_tpl
 typedef Color_tpl<float> ColorF;
 typedef Color_tpl<UINT8> ColorB;
 
-enum EDrawTextFlags : UINT32
+struct IPersistantDebug
 {
-	eDrawText_Default,
-	eDrawText_Center = 1,
-	eDrawText_Right = 2,
-	eDrawText_CenterV = 4,
-	eDrawText_Bottom = 8,
-	eDrawText_2D = 16,
-	eDrawText_FixedSize = 32,
-	eDrawText_800x600 = 64,
-	eDrawText_Monospace = 128,
-	eDrawText_Framed = 256,
-	eDrawText_DepthTest = 512,
-	eDrawText_IgnoreOverscan = 1024,
-	eDrawText_LegacyBehavior = 2048
-};
-
-class IRenderAuxGeom
-{
-public:
-	virtual ~IRenderAuxGeom() {}
-	virtual void SetRenderFlags(void) = 0;
-	virtual void GetRenderFlags() = 0;
-	virtual const void GetCamera() const = 0;
-	virtual void SetCurrentDisplayContext(void) = 0;
-	virtual void DrawPoint(void) = 0;
-	virtual void DrawPoints(void) = 0;
-	virtual void DrawPoints(int) = 0;
-	virtual void DrawLine(const Vec3& v0, const ColorB& colV0, const Vec3& v1, const ColorB& colV1, float thickness = 1.0f) = 0;
-	virtual void DrawLines(void) = 0;
-	virtual void DrawLines(int) = 0;
-	virtual void DrawLines(int, int) = 0;
-	virtual void DrawLines(int, int, int) = 0;
-	virtual void DrawLines(int, int, int, int) = 0;
-	virtual void DrawLineStrip(void) = 0;
-	virtual void DrawPolyline(void) = 0;
-	virtual void DrawPolyline(int) = 0;
-	virtual void DrawTriangle(void) = 0;
-	virtual void DrawTriangles(void) = 0;
-	virtual void DrawTriangles(int) = 0;
-	virtual void DrawTriangles(int, int) = 0;
-	virtual void DrawTriangles(int, int, int) = 0;
-	virtual void DrawBuffer(void) = 0;
-	virtual void BeginDrawBuffer(void) = 0;
-	virtual void EndDrawBuffer(void) = 0;
-	virtual void DrawAABB(void) = 0;
-	virtual void DrawAABBs(void) = 0;
-	virtual void DrawAABB(int) = 0;
-	virtual void DrawOBB(void) = 0;
-	virtual void DrawOBB(int) = 0;
-	virtual void DrawSphere(void) = 0;
-	virtual void DrawCone(void) = 0;
-	virtual void DrawCylinder(void) = 0;
-	virtual void DrawBone(void) = 0;
-	virtual void RenderTextQueued(Vec3 pos, const SDrawTextInfo& ti, const char* text) = 0;
-	virtual int PushMatrix(void) = 0;
-	virtual void PushImage(void) = 0;
-	virtual int SetTexture(void) { return -1; }
-	virtual PVOID GetMatrix() = 0;
-	virtual void SetMatrixIndex(void) = 0;
-	virtual void Submit(void) = 0;
-	virtual void SetOrthographicProjection(void) = 0;
-
-	void RenderText(Vec3 pos, const SDrawTextInfo& ti, const char* format, va_list args)
-	{
-		if (format)
-		{
-			char str[512];
-
-			vsnprintf(str, sizeof str, format, args);
-
-			RenderTextQueued(pos, ti, str);
-		}
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* format, va_list args)
-	{
-		SDrawTextInfo ti;
-		ti.scale.x = font_size;
-		ti.scale.y = font_size;
-		ti.flags = eDrawText_2D | eDrawText_800x600 | eDrawText_FixedSize | ((bCenter) ? eDrawText_Center : 0);
-		ti.color[0] = fColor.r;
-		ti.color[1] = fColor.g;
-		ti.color[2] = fColor.b;
-		ti.color[3] = fColor.a;
-		Vec3 pos;
-		pos.x = x;
-		pos.y = y;
-		pos.z = 0.5f;
-
-		RenderText(pos, ti, format, args);
-	}
-
-	void Draw2dLabel(float x, float y, float font_size, const ColorF& fColor, bool bCenter, const char* label_text, ...)
-	{
-		va_list args;
-		va_start(args, label_text);
-		Draw2dLabel(x, y, font_size, fColor, bCenter, label_text, args);
-		va_end(args);
-	}
+	virtual ~IPersistantDebug() {}
+	virtual void Begin(const char* szName, bool clear) = 0;
+	virtual void AddSphere(const Vec3& pos, float radius, ColorF clr, float timeout) = 0;
+	virtual void AddDirection(const Vec3& pos, float radius, const Vec3& dir, ColorF clr, float timeout) = 0;
+	virtual void AddLine(const Vec3& pos1, const Vec3& pos2, ColorF clr, float timeout) = 0;
+	virtual void AddPlanarDisc(const Vec3& pos, float innerRadius, float outerRadius, ColorF clr, float timeout) = 0;
+	virtual void AddCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, ColorF clr, float timeout) = 0;
+	virtual void AddCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, ColorF clr, float timeout) = 0;
+	virtual void Add2DText(const char* szText, float size, ColorF clr, float timeout) = 0;
+	virtual void AddText(float x, float y, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
+	virtual void AddText3D(const Vec3& pos, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
+	virtual void Add2DLine(float x1, float y1, float x2, float y2, ColorF clr, float timeout) = 0;
+	virtual void AddQuat(void) = 0;
+	virtual void AddAABB(const Vec3& min, const Vec3& max, ColorF clr, float timeout) = 0;
+	virtual void AddEntityTag(void) = 0;
+	virtual void ClearEntityTags(void) = 0;
+	virtual void ClearStaticTag(void) = 0;
+	virtual void ClearTagContext(const char* tagContext) = 0;
+	virtual void ClearTagContext(void) = 0;
+	virtual void Update(float frameTime) = 0;
+	virtual void PostUpdate(float frameTime) = 0;
+	virtual void Reset() = 0;
 };
 
 struct IRenderer//: public IRendererCallbackServer
@@ -449,7 +373,7 @@ struct IGameFramework
 	virtual bool CanCheat() = 0;
 	virtual const char* GetLevelName() = 0;
 	virtual void GetAbsLevelPath(char* pPathBuffer, UINT32 pathBufferSize) = 0;
-	virtual PVOID GetIPersistantDebug() = 0;
+	virtual IPersistantDebug* GetIPersistantDebug() = 0;
 	virtual void fn_85(void) = 0;
 	virtual void fn_86(void) = 0;
 	virtual void fn_87(void) = 0;
@@ -494,7 +418,7 @@ struct SSystemGlobalEnvironment {
 	UINT64 ukn_25;
 	UINT64 ukn_26;
 	IRenderer* pRenderer;
-	IRenderAuxGeom* pAuxGeomRenderer; /* NullAuxGeromRenderer */
+	PVOID pAuxGeomRenderer; /* NullAuxGeromRenderer */
 	UINT64 ukn_27;
 	UINT64 ukn_28;
 	UINT64 ukn_29;
