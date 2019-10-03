@@ -173,6 +173,9 @@ static bool resolve_all_symbols(void) {
 }
 #endif
 
+static UINT64 pEntSys = 0x0;
+static IEntitySystem * iEnt = NULL;
+
 void APIENTRY LibEntry(PVOID user_ptr)
 {
 	static bool firstEntry = true;
@@ -205,8 +208,8 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			"TestDLL Notification",
 			MB_OK | MB_ICONINFORMATION);
 
-		UINT64 pEntSys = *(UINT64*)user_ptr;
-		IEntitySystem * iEnt = *(IEntitySystem **)user_ptr;
+		pEntSys = *(UINT64*)user_ptr;
+		iEnt = *(IEntitySystem **)user_ptr;
 
 #define PENTITYSYSTEM_ISYSTEM_OFFSET 104
 		if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
@@ -233,15 +236,52 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			return;
 		}
 
+		if ((PVOID)pEntSys != iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != pEntitySystem[%p]\n",
+				(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
+		if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem()) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
+				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem());
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
 		char buf[128];
-		snprintf(buf, sizeof buf, "---%p---%p---%p---%u------\n",
-			iEnt->GetSystem()->GetGlobalEnvironment(), (PVOID)pEntSys,
-			iEnt->GetSystem()->GetIEntitySystem(),
-			iEnt->GetSystem()->GetUsedMemory());
+		snprintf(buf, sizeof buf, "---%X,%X,%X,%X,%X---%s---%X,%X,%X,%X,%X---%p---\n",
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsGamePaused(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsGameStarted(),
+
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanSave(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanLoad(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->CanCheat(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetLevelName(),
+
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsEditing(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInLevelLoad(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsLoadingSaveGame(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInTimeDemo(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsTimeDemoRecording(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIPersistantDebug()
+			);
 		MessageBoxA(NULL,
 			buf,
 			"TestDLL Notification",
 			MB_OK | MB_ICONINFORMATION);
+		//iEnt->GetSystem()->Quit();
 #else
 		MessageBoxA(NULL,
 			"TEST !!!",

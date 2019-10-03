@@ -434,6 +434,8 @@ struct IGameFramework
 	virtual void ScheduleEndLevel(const char* nextLevel) = 0;
 	virtual void ScheduleEndLevelNow(const char* nextLevel) = 0;
 	virtual void OnEditorSetGameMode(int iMode) = 0;
+	virtual void fn_00(void);
+	virtual void fn_01(void);
 	virtual bool IsEditing() = 0;
 	virtual bool IsInLevelLoad() = 0;
 	virtual bool IsLoadingSaveGame() = 0;
@@ -479,11 +481,11 @@ struct SSystemGlobalEnvironment {
 	UINT64 pOpticsManager;
 	UINT64 pTimer;
 	UINT64 pCryFont;
-	IGameFramework* pGameFramework;
+	UINT64 ukn_00;
 	UINT64 pLocalMemoryUsage;
+	IGameFramework* pGameFramework;
+	UINT64 ukn_01;
 	IEntitySystem* pEntitySystem;
-	UINT64 pConsole;
-	UINT64 pAudioSystem;
 	ISystem* pSystem;
 	UINT64 pCharacterManager;
 	UINT64 pAISystem;
