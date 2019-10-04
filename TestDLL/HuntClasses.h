@@ -8,6 +8,27 @@
 struct ISystem;
 
 
+#define ENTITY_FLAG_LOCAL_PLAYER      0x8000000
+#define ENTITY_FLAG_TRIGGER_AREAS     0x2000
+#define ENTITY_FLAG_SEND_RENDER_EVENT 0x20000
+#define ENTITY_FLAG_CASTSHADOW        0x1
+
+class Matrix34 {
+public:
+	float m00;
+	float m01;
+	float m02;
+	float m03;
+	float m10;
+	float m11;
+	float m12;
+	float m13;
+	float m20;
+	float m21;
+	float m22;
+	float m23;
+};
+
 template<class _I> class _smart_ptr
 {
 private:
@@ -126,6 +147,70 @@ public:
 	}
 };
 
+template<typename T, int N>
+struct INumberArray
+{
+};
+
+template<typename T, int N, typename Final>
+struct INumberVector : INumberArray<T, N>
+{
+};
+
+template<typename F> struct Vec3_tpl;
+template<typename F> struct Vec3_tpl
+	: INumberVector<F, 3, Vec3_tpl<F>>
+{
+public:
+	F x, y, z;
+	Vec3_tpl(F vx, F vy, F vz) : x(vx), y(vy), z(vz) {}
+};
+typedef Vec3_tpl<float> Vec3;
+
+static inline Vec3_tpl<float> TranslateMat34ToVec3(const Matrix34 &mat34) {
+	return Vec3_tpl<float>(mat34.m03, mat34.m13, mat34.m23);
+}
+
+enum EDrawTextFlags : UINT32
+{
+	eDrawText_Default,
+	eDrawText_Center = 1,
+	eDrawText_Right = 2,
+	eDrawText_CenterV = 4,
+	eDrawText_Bottom = 8,
+	eDrawText_2D = 16,
+	eDrawText_FixedSize = 32,
+	eDrawText_800x600 = 64,
+	eDrawText_Monospace = 128,
+	eDrawText_Framed = 256,
+	eDrawText_DepthTest = 512,
+	eDrawText_IgnoreOverscan = 1024,
+	eDrawText_LegacyBehavior = 2048
+};
+
+template<class T> struct Color_tpl
+{
+	T r, g, b, a;
+	Color_tpl() {};
+	Color_tpl(T _r, T _g, T _b, T _a) : r(_r), g(_g), b(_b), a(_a) {}
+};
+
+typedef Color_tpl<UINT8>  ColorB;
+
+struct SAuxGeomRenderFlags
+{
+	UINT32 m_renderFlags;
+};
+
+class IRenderAuxGeom
+{
+public:
+	virtual ~IRenderAuxGeom() {}
+	virtual SAuxGeomRenderFlags  SetRenderFlags(const SAuxGeomRenderFlags& renderFlags) = 0;
+	virtual SAuxGeomRenderFlags  GetRenderFlags() = 0;
+	virtual PVOID GetCamera() const = 0;
+};
+
 struct IEntity
 {
 public:
@@ -133,28 +218,50 @@ public:
 	virtual int GetId() const = 0;
 	virtual const PVOID GetGuid() const = 0;
 	virtual PVOID GetClass() const = 0;
-	virtual PVOID GetArchetype() const = 0;
-	virtual void SetFlags(UINT32 flags) = 0;
+	virtual void fn_00(void) = 0;
+	virtual void fn_01(void) = 0;
 	virtual UINT32 GetFlags() const = 0;
-	virtual void AddFlags(UINT32 flagsToAdd) = 0;
-	virtual void ClearFlags(UINT32 flagsToClear) = 0;
-	virtual bool CheckFlags(UINT32 flagsToCheck) const = 0;
-	virtual void SetFlagsExtended(UINT32 flags) = 0;
+	virtual void fn_02(void) = 0;
+	virtual void fn_03(void) = 0;
+	virtual void fn_04(void) const = 0;
+	virtual void fn_05(void) = 0;
 	virtual UINT32 GetFlagsExtended() const = 0;
 	virtual bool IsInitialized() const = 0;
 	virtual bool IsGarbage() const = 0;
 	virtual UINT8 GetComponentChangeState() const = 0;
-	virtual void SetName(const char* sName) = 0;
+	virtual void fn_06(void) = 0;
 	virtual const char* GetName() const = 0;
 	virtual std::string GetEntityTextDescription() const = 0;
-	virtual void SerializeXML(PVOID entityNode, bool bLoading, bool bIncludeScriptProxy = true, bool bExcludeSchematycProperties = false) = 0;
+	virtual void fn_07(void) = 0;
 	virtual bool IsLoadedFromLevelFile() const = 0;
-	virtual void AttachChild(IEntity* pChildEntity, const PVOID attachParams) = 0;
-	virtual void DetachAll(int attachmentFlags = 0) = 0;
-	virtual void DetachThis(int attachmentFlags = 0, int transformReasons = 0) = 0;
+	virtual void fn_08(void) = 0;
+	virtual void fn_09(void) = 0;
+	virtual void fn_10(void) = 0;
 	virtual int GetChildCount() const = 0;
 	virtual IEntity* GetChild(int nIndex) const = 0;
 	virtual IEntity* GetParent() const = 0;
+	virtual IEntity* GetLocalSimParent() const = 0;
+	virtual Matrix34 GetParentAttachPointWorldTM() const = 0;
+	virtual bool IsParentAttachmentValid() const = 0;
+	virtual void fn_11(void) = 0;
+	virtual void fn_12(void) = 0;
+	virtual const Matrix34& GetWorldTM() const = 0;
+	virtual Matrix34 GetLocalTM() const = 0;
+	virtual void fn_13(void) const = 0;
+	virtual void fn_14(void) const = 0;
+	virtual void fn_15(void) = 0;
+	virtual void fn_16(void) = 0;
+	virtual void fn_17(void) = 0;
+	virtual const Vec3& GetPos() const = 0;
+	virtual void fn_18(void) = 0;
+	virtual void fn_19(void) const = 0;
+	virtual void fn_20(void) = 0;
+	virtual const Vec3& GetScale() const = 0;
+	virtual void fn_21(void) = 0;
+	virtual Vec3 GetWorldPos() const = 0;
+	virtual void fn_22(void) const = 0;
+	virtual void fn_23(void) const = 0;
+	virtual Vec3 GetWorldScale() const = 0;
 };
 
 struct IEntityIt
@@ -205,87 +312,6 @@ struct IEntitySystem
 	virtual void fn_25(void) const = 0;
 	virtual ISystem* GetSystem() const = 0;
 };
-
-/*
-template<typename T, int N>
-struct INumberArray
-{
-};
-
-template<typename T, int N, typename Final>
-struct INumberVector : INumberArray<T, N>
-{
-};
-
-template<typename T> struct Vec2_tpl;
-template<class F> struct Vec2_tpl
-	: INumberVector<F, 2, Vec2_tpl<F>>
-{
-	F x, y;
-};
-typedef Vec2_tpl<float> Vec2;
-
-template<typename F> struct Vec3_tpl;
-template<typename F> struct Vec3_tpl
-	: INumberVector<F, 3, Vec3_tpl<F>>
-{
-	F x, y, z;
-};
-typedef Vec3_tpl<float> Vec3;
-
-struct SDrawTextInfo
-{
-	//! One of EDrawTextFlags flags.
-	int flags;
-
-	//! Text color, (r,g,b,a) all members must be specified.
-	float   color[4];
-	Vec2    scale;
-	PVOID   pFont;
-
-	SDrawTextInfo()
-	{
-		flags = 0;
-		color[0] = color[1] = color[2] = color[3] = 1;
-		scale.x = 0.0f;
-		scale.y = 0.0f;
-		pFont = nullptr;
-	}
-};
-
-template<class T> struct Color_tpl
-{
-	T r, g, b, a;
-};
-typedef Color_tpl<float> ColorF;
-typedef Color_tpl<UINT8> ColorB;
-
-struct IPersistantDebug
-{
-	virtual ~IPersistantDebug() {}
-	virtual void Begin(const char* szName, bool clear) = 0;
-	virtual void AddSphere(const Vec3& pos, float radius, ColorF clr, float timeout) = 0;
-	virtual void AddDirection(const Vec3& pos, float radius, const Vec3& dir, ColorF clr, float timeout) = 0;
-	virtual void AddLine(const Vec3& pos1, const Vec3& pos2, ColorF clr, float timeout) = 0;
-	virtual void AddPlanarDisc(const Vec3& pos, float innerRadius, float outerRadius, ColorF clr, float timeout) = 0;
-	virtual void AddCone(const Vec3& pos, const Vec3& dir, float baseRadius, float height, ColorF clr, float timeout) = 0;
-	virtual void AddCylinder(const Vec3& pos, const Vec3& dir, float radius, float height, ColorF clr, float timeout) = 0;
-	virtual void Add2DText(const char* szText, float size, ColorF clr, float timeout) = 0;
-	virtual void AddText(float x, float y, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
-	virtual void AddText3D(const Vec3& pos, float size, ColorF clr, float timeout, const char* fmt, ...) = 0;
-	virtual void Add2DLine(float x1, float y1, float x2, float y2, ColorF clr, float timeout) = 0;
-	virtual void AddQuat(void) = 0;
-	virtual void AddAABB(const Vec3& min, const Vec3& max, ColorF clr, float timeout) = 0;
-	virtual void AddEntityTag(void) = 0;
-	virtual void ClearEntityTags(void) = 0;
-	virtual void ClearStaticTag(void) = 0;
-	virtual void ClearTagContext(const char* tagContext) = 0;
-	virtual void ClearTagContext(void) = 0;
-	virtual void Update(float frameTime) = 0;
-	virtual void PostUpdate(float frameTime) = 0;
-	virtual void Reset() = 0;
-};
-*/
 
 struct IRenderer//: public IRendererCallbackServer
 {
@@ -353,6 +379,112 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual bool ProjectToScreen(
 		float ptx, float pty, float ptz,
 		float* sx, float* sy, float* sz) = 0;
+	virtual int UnProject(
+		float sx, float sy, float sz,
+		float* px, float* py, float* pz,
+		const float modelMatrix[16],
+		const float projMatrix[16],
+		const int viewport[4]) = 0;
+	virtual int UnProjectFromScreen(
+		float sx, float sy, float sz,
+		float* px, float* py, float* pz) = 0;
+	virtual void fn_43(void) = 0;
+	virtual void fn_44(void) = 0;
+	virtual void fn_45(void) = 0;
+	virtual void fn_46(void) = 0;
+	virtual void fn_47(void) = 0;
+	virtual void fn_48(void) = 0;
+	virtual void fn_49(void) = 0;
+	virtual void fn_50(void) = 0;
+	virtual int  CurThreadList() = 0;
+	virtual void fn_51(void) = 0;
+	virtual void fn_52(void) = 0;
+	virtual void fn_53(void) = 0;
+	virtual void fn_54(void) = 0;
+	virtual void fn_55(void) = 0;
+	virtual void fn_56(void) = 0;
+	virtual void fn_57(void) = 0;
+	virtual void fn_58(void) = 0;
+	virtual void fn_59(void) = 0;
+	virtual void fn_60(void) = 0;
+	virtual void fn_61(void) = 0;
+	virtual void fn_62(void) = 0;
+	virtual void fn_63(void) = 0;
+	virtual void fn_64(void) = 0;
+	virtual void fn_65(void) = 0;
+	virtual void fn_66(void) = 0;
+	virtual void fn_67(void) = 0;
+	virtual void fn_68(void) = 0;
+	virtual void fn_69(void) = 0;
+	virtual void fn_70(void) = 0;
+	virtual void fn_71(void) = 0;
+	virtual void fn_72(void) = 0;
+	virtual void fn_73(void) = 0;
+	virtual void fn_74(void) = 0;
+	virtual void fn_75(void) = 0;
+	virtual void fn_76(void) = 0;
+	virtual void fn_77(void) = 0;
+	virtual void fn_78(void) = 0;
+	virtual void fn_79(void) const = 0;
+	virtual void fn_80(void) = 0;
+	virtual void fn_81(void) = 0;
+	virtual void fn_82(void) = 0;
+	virtual void fn_83(void) = 0;
+	virtual void fn_84(void) = 0;
+	virtual void fn_85(void) = 0;
+	virtual void fn_86(void) = 0;
+	virtual void fn_87(void) = 0;
+	virtual void fn_88(void) = 0;
+	virtual void fn_89(void) = 0;
+	virtual void fn_90(void) = 0;
+	virtual void fn_91(void) = 0;
+	virtual void fn_92(void) = 0;
+	virtual void fn_93(void) = 0;
+	virtual void fn_94(void) = 0;
+	virtual void fn_95(void) = 0;
+	virtual void fn_96(void) = 0;
+	virtual void fn_97(void) = 0;
+	virtual void fn_98(void) = 0;
+	virtual void fn_99(void) = 0;
+	virtual void fn_100(void) = 0;
+	virtual void fn_101(void) = 0;
+	virtual void fn_102(void) = 0;
+	virtual void fn_103(void) = 0;
+	virtual void fn_104(void) const = 0;
+	virtual void fn_105(void) = 0;
+	virtual void fn_106(void) = 0;
+	virtual void fn_107(void) = 0;
+	virtual void fn_108(void) = 0;
+	virtual void fn_109(void) = 0;
+	virtual void fn_110(void) = 0;
+	virtual void fn_111(void) = 0;
+	virtual void fn_112(void) = 0;
+	virtual void fn_113(void) = 0;
+	virtual void fn_114(void) = 0;
+	virtual void fn_115(void) = 0;
+	virtual void fn_116(void) = 0;
+	virtual void fn_117(void) = 0;
+	virtual void fn_118(void) = 0;
+	virtual void fn_119(void) = 0;
+	virtual void fn_120(void) = 0;
+	virtual void fn_121(void) = 0;
+	virtual int  GetPolyCount() = 0;
+	virtual void fn_122(void) = 0;
+	virtual void fn_123(void) = 0;
+	virtual void fn_124(void) = 0;
+	virtual int  GetFrameID(bool bIncludeRecursiveCalls = true) = 0;
+	virtual void fn_125(void) = 0;
+	virtual float ScaleCoordX(float value) const = 0;
+	virtual float ScaleCoordY(float value) const = 0;
+	virtual void  ScaleCoord(float& x, float& y) const = 0;
+	virtual void fn_126(void) = 0;;
+	virtual void fn_127(void) = 0;
+	virtual void fn_128(void) = 0;
+	virtual void fn_129(void) = 0;
+	virtual IRenderAuxGeom* GetIRenderAuxGeom() = 0;
+	virtual IRenderAuxGeom* GetOrCreateIRenderAuxGeom(const PVOID pCustomCamera = nullptr) = 0;
+	virtual void DeleteAuxGeom(IRenderAuxGeom* pRenderAuxGeom) = 0;
+	virtual void SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom, bool merge = true) = 0;
 };
 
 struct IGameFramework
@@ -508,7 +640,7 @@ struct SSystemGlobalEnvironment {
 	UINT64 ukn_25;
 	UINT64 ukn_26;
 	IRenderer* pRenderer;
-	PVOID pAuxGeomRenderer; /* NullAuxGeomRenderer */
+	IRenderAuxGeom* pAuxGeomRenderer; /* NullAuxGeomRenderer */
 	UINT64 ukn_27;
 	UINT64 ukn_28;
 	UINT64 ukn_29;
@@ -623,3 +755,21 @@ struct ISystem
 	virtual void fn_66(void) = 0;
 	virtual IRenderer* GetIRenderer() = 0;
 };
+
+static inline bool HProjectToScreen(IRenderer* pIRenderer, float sx, float sy, float sz, float* ox, float* oy, float* oz)
+{
+	return  pIRenderer->ProjectToScreen(sx, sy, sz, ox, oy, oz);
+}
+
+static inline bool WorldToScreen(SSystemGlobalEnvironment* globalEnv, Vec3 vEntPos, Vec3 &vOut)
+{
+	IRenderer* Renderer = globalEnv->pRenderer;
+	HProjectToScreen(Renderer, vEntPos.x, vEntPos.y, vEntPos.z,
+		&vOut.x, &vOut.y, &vOut.z);
+
+	vOut.x *= (Renderer->GetWidth() / 100.0f);
+	vOut.y *= (Renderer->GetHeight() / 100.0f);
+	vOut.z *= 1.0f;
+
+	return ((vOut.z < 1.0f) && (vOut.x > 0) && (vOut.x < (float)Renderer->GetWidth()) && (vOut.y > 0) && (vOut.y < (float)Renderer->GetHeight()));
+}
