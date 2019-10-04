@@ -7,6 +7,7 @@
 #include <array>
 
 EXTERN_C BOOL WINAPI _CRT_INIT(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
+#pragma comment(lib, "Gdi32.lib")
 
 #if 0
 struct ResolvedDllEntry {
@@ -175,6 +176,62 @@ static bool resolve_all_symbols(void) {
 
 static UINT64 pEntSys = 0x0;
 static IEntitySystem * iEnt = NULL;
+static HWND HWND_Hunt = NULL;
+static HDC HDC_Hunt = NULL;
+static HBRUSH EnemyBrush = NULL;
+static COLORREF SnapLineCOLOR = NULL;
+static COLORREF TextCOLOR = NULL;
+static HFONT HFONT_Hunt = NULL;
+static bool GDI_initialized = false;
+
+static void SetupDrawing(HWND hWnd)
+{
+	HWND_Hunt = hWnd;
+	HDC_Hunt = GetDC(hWnd);
+	EnemyBrush = CreateSolidBrush(RGB(255, 0, 0));
+	//Color
+	SnapLineCOLOR = RGB(0, 0, 255);
+	TextCOLOR = RGB(0, 255, 0);
+	if (HWND_Hunt && HDC_Hunt && EnemyBrush && SnapLineCOLOR && TextCOLOR) {
+		GDI_initialized = true;
+	}
+}
+
+static inline void DrawFilledRect(int x, int y, int w, int h)
+{
+	RECT rect = { x, y, x + w, y + h };
+	FillRect(HDC_Hunt, &rect, EnemyBrush);
+}
+
+static inline void DrawBorderBox(int x, int y, int w, int h, int thickness)
+{
+	DrawFilledRect(x, y, w, thickness);
+	DrawFilledRect(x, y, thickness, h);
+	DrawFilledRect((x + w), y, thickness, h);
+	DrawFilledRect(x, y + h, w + thickness, thickness);
+}
+
+static inline void DrawString(int x, int y, COLORREF color, const char* text)
+{
+	SetTextAlign(HDC_Hunt, TA_CENTER | TA_NOUPDATECP);
+	SetBkColor(HDC_Hunt, RGB(0, 0, 0));
+	SetBkMode(HDC_Hunt, TRANSPARENT);
+	SetTextColor(HDC_Hunt, color);
+	SelectObject(HDC_Hunt, HFONT_Hunt);
+	TextOutA(HDC_Hunt, x, y, text, (int)strlen(text));
+	DeleteObject(HFONT_Hunt);
+}
+
+static inline void DrawLine(int StartX, int StartY, int EndX, int EndY, COLORREF Pen)
+{
+	int a = 0;
+	HPEN hOPen;
+	HPEN hNPen = CreatePen(PS_SOLID, 2, Pen);
+	hOPen = (HPEN)SelectObject(HDC_Hunt, hNPen);
+	MoveToEx(HDC_Hunt, StartX, StartY, NULL);
+	a = LineTo(HDC_Hunt, EndX, EndY);
+	DeleteObject(SelectObject(HDC_Hunt, hOPen));
+}
 
 void APIENTRY LibEntry(PVOID user_ptr)
 {
@@ -196,17 +253,6 @@ void APIENTRY LibEntry(PVOID user_ptr)
 #if 1
 		HINSTANCE addr = GetModuleHandle(NULL);
 		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
-		std::string text;
-		std::vector<DWORD> blubb;
-		text = "DllMain from TestDLL: ";
-		blubb.push_back(1);
-		blubb.push_back(2);
-		//std::stringstream muh;
-		//muh << "bla" << "," << "blubb";
-		MessageBoxA(NULL,
-			text.c_str(),
-			"TestDLL Notification",
-			MB_OK | MB_ICONINFORMATION);
 
 		pEntSys = *(UINT64*)user_ptr;
 		iEnt = *(IEntitySystem **)user_ptr;
@@ -272,20 +318,33 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			return;
 		}
 
+		if (iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer != iEnt->GetSystem()->GetIRenderer()) {
+			char errbuf[128];
+			snprintf(errbuf, sizeof errbuf,
+				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
+			MessageBoxA(NULL,
+				errbuf,
+				"Hunted WARNING",
+				MB_OK | MB_ICONINFORMATION);
+			return;
+		}
+
+		SetupDrawing(GetActiveWindow());
+
 		char buf[128];
-		snprintf(buf, sizeof buf, "---%p,%p---%d,%d----%X,%X,%X---\n",
-			iEnt->GetSystem(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pSystem,
-			iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer->GetWidth(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer->GetOverlayWidth(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->bServer,
-			iEnt->GetSystem()->GetGlobalEnvironment()->bMultiplayer,
-			iEnt->GetSystem()->GetGlobalEnvironment()->bHostMigrating
+		snprintf(buf, sizeof buf, "---%p---\n",
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIPersistantDebug()
 		);
-		MessageBoxA(NULL,
-			buf,
-			"TestDLL Notification",
-			MB_OK | MB_ICONINFORMATION);
+		AllocConsole();
+		freopen("CONOUT$", "w", stdout);
+		SetWindowTextA(GetConsoleWindow(), "Hunted");
+		printf("Welcome.\n");
+		printf("%s--%s--%u--%u--%s--%d\n", buf, iEnt->GetSystem()->GetRootFolder(),
+			iEnt->GetSystem()->GetUsedMemory(),
+			iEnt->GetSystem()->GetCPUFlags(),
+			iEnt->GetSystem()->GetUserName(),
+			iEnt->GetSystem()->GetLogicalCPUCount());
 		//iEnt->GetSystem()->Quit();
 #else
 		MessageBoxA(NULL,
@@ -294,4 +353,11 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			MB_OK | MB_ICONINFORMATION);
 #endif
 	}
+#if 1
+	if (GDI_initialized) {
+		DrawBorderBox(5, 5, 50, 50, 3);
+		DrawLine(125, 125, 515, 515, SnapLineCOLOR);
+		DrawString(900, 900, TextCOLOR, "BLABLABLA!");
+	}
+#endif
 }
