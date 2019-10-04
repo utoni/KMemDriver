@@ -1,28 +1,56 @@
 #pragma once
 
 #include <Windows.h>
-
-#include <stdio.h>
 #include <stdarg.h>
-#include <string.h>
+
+#include <string>
 
 struct ISystem;
 
+struct IEntity
+{
+public:
+	virtual ~IEntity() {}
+	virtual int GetId() const = 0;
+	virtual const PVOID GetGuid() const = 0;
+	virtual PVOID GetClass() const = 0;
+	virtual PVOID GetArchetype() const = 0;
+	virtual void SetFlags(UINT32 flags) = 0;
+	virtual UINT32 GetFlags() const = 0;
+	virtual void AddFlags(UINT32 flagsToAdd) = 0;
+	virtual void ClearFlags(UINT32 flagsToClear) = 0;
+	virtual bool CheckFlags(UINT32 flagsToCheck) const = 0;
+	virtual void SetFlagsExtended(UINT32 flags) = 0;
+	virtual UINT32 GetFlagsExtended() const = 0;
+	virtual bool IsInitialized() const = 0;
+	virtual bool IsGarbage() const = 0;
+	virtual UINT8 GetComponentChangeState() const = 0;
+	virtual void SetName(const char* sName) = 0;
+	virtual const char* GetName() const = 0;
+	virtual std::string GetEntityTextDescription() const = 0;
+	virtual void SerializeXML(PVOID entityNode, bool bLoading, bool bIncludeScriptProxy = true, bool bExcludeSchematycProperties = false) = 0;
+	virtual bool IsLoadedFromLevelFile() const = 0;
+	virtual void AttachChild(IEntity* pChildEntity, const PVOID attachParams) = 0;
+	virtual void DetachAll(int attachmentFlags = 0) = 0;
+	virtual void DetachThis(int attachmentFlags = 0, int transformReasons = 0) = 0;
+	virtual int GetChildCount() const = 0;
+	virtual IEntity* GetChild(int nIndex) const = 0;
+	virtual IEntity* GetParent() const = 0;
+};
+
+struct IEntityIt
+{
+	virtual ~IEntityIt() {}
+	virtual void AddRef() = 0;
+	virtual void Release() = 0;
+	virtual bool IsEnd() = 0;
+	virtual IEntity* Next() = 0;
+	virtual IEntity* This() = 0;
+	virtual void MoveFirst() = 0;
+};
+
 struct IEntitySystem
 {
-	enum SinkEventSubscriptions : UINT32
-	{
-		OnBeforeSpawn = 1,
-		OnSpawn = 2,
-		OnRemove = 4,
-		OnReused = 8,
-
-		Last = OnReused,
-		Count = 4,
-
-		AllSinkEvents = ~0u,
-	};
-
 	virtual ~IEntitySystem() {}
 	virtual void Release() = 0;
 	virtual void PrePhysicsUpdate() = 0;
@@ -109,12 +137,7 @@ struct IEntitySystem
 	virtual void ToggleLayersBySubstring(const char* pSearchSubstring, const char* pExceptionSubstring, bool isEnable) = 0;
 	virtual PVOID CreateBSPTree3D(void) = 0;
 	virtual void ReleaseBSPTree3D(PVOID) = 0;
-
-	//! Represents a unique identifier for a static entity loaded from disk
-	//! Used to quickly identify static entities over the network, instead of needing to send over long GUIDs
 	using StaticEntityNetworkIdentifier = UINT16;
-
-	//! Queries an entity identifier from its static entity network id, most likely sent by the server
 	virtual int GetEntityIdFromStaticEntityNetworkId(StaticEntityNetworkIdentifier id) const = 0;
 };
 
@@ -451,91 +474,85 @@ struct SSystemGlobalEnvironment {
 struct ISystem
 {
 	virtual ~ISystem() {}
-	virtual PVOID GetCVarsWhiteListConfigSink() const = 0;
+	virtual void fn_00(void) const = 0;
 	virtual SSystemGlobalEnvironment* GetGlobalEnvironment() = 0;
-	virtual PVOID GetUserCallback() const = 0;
+	virtual void fn_01(void) const = 0;
 	virtual const char* GetRootFolder() const = 0;
-	virtual bool DoFrame(void) = 0;
-	virtual void RenderBegin(void) = 0;
-	virtual void RenderEnd(bool bRenderStats = true) = 0;
-	virtual bool Update(int updateFlags, int nPauseMode = 0) = 0;
-	virtual void RenderPhysicsHelpers() = 0;
-	virtual PVOID GetManualFrameStepController() const = 0;
-	virtual bool UpdateLoadtime() = 0;
-	virtual void SynchronousLoadingTick(const char* pFunc, int line) = 0;
-	virtual void RenderStatistics() = 0;
-	virtual void RenderPhysicsStatistics(PVOID pWorld) = 0;
+	virtual void fn_02(void) = 0;
+	virtual void fn_03(void) = 0;
+	virtual void fn_04(void) = 0;
+	virtual void fn_05(void) = 0;
+	virtual void fn_06(void) = 0;
+	virtual void fn_07(void) = 0;
+	virtual void fn_08(void) = 0;
+	virtual void fn_09(void) = 0;
+	virtual void fn_10(void) = 0;
+	virtual void fn_11(void) = 0;
 	virtual UINT32 GetUsedMemory() = 0;
 	virtual const char* GetUserName() = 0;
 	virtual UINT32 GetCPUFlags() = 0;
 	virtual int GetLogicalCPUCount() = 0;
-	virtual void DumpMemoryUsageStatistics(bool bUseKB = false) = 0;
+	virtual void fn_12(void) = 0;
 	virtual void Quit() = 0;
 	virtual void Relaunch(bool bRelaunch) = 0;
 	virtual bool IsQuitting() const = 0;
-	virtual bool IsShaderCacheGenMode() const = 0;
-	virtual void SerializingFile(int mode) = 0;
-	virtual int  IsSerializingFile() const = 0;
+	virtual void fn_13(void) = 0;
+	virtual void fn_14(void) = 0;
+	virtual void fn_15(void) = 0;
 	virtual bool IsRelaunch() const = 0;
-	virtual void DisplayErrorMessage(const char* acMessage, float fTime, const float* pfColor = 0, bool bHardError = true) = 0;
-	virtual void FatalError(const char* sFormat, ...) = 0;
-	virtual void ReportBug(const char* sFormat, ...) = 0;
-	virtual void WarningV(int module, int severity, int flags, const char* file, const char* format, va_list args) = 0;
-	virtual void Warning(int module, int severity, int flags, const char* file, const char* format, ...) = 0;
-	virtual void WarningOnce(int module, int severity, int flags, const char* file, const char* format, ...) = 0;
-	virtual bool CheckLogVerbosity(int verbosity) = 0;
-	virtual bool IsUIFrameworkMode() { return false; }
-	virtual void FillRandomMT(UINT32* pOutWords, UINT32 numWords) = 0;
-	virtual PVOID GetRandomGenerator() = 0;
-	virtual PVOID GetIZLibCompressor() = 0;
-	virtual PVOID GetIZLibDecompressor() = 0;
-	virtual PVOID GetLZ4Decompressor() = 0;
-	virtual PVOID GetPerfHUD() = 0;
-	virtual PVOID GetMiniGUI() = 0;
-	virtual PVOID GetPlatformOS() = 0;
-	virtual PVOID GetINotificationNetwork() = 0;
-	virtual PVOID GetIHardwareMouse() = 0;
-	virtual PVOID GetIDialogSystem() = 0;
-	virtual PVOID GetIFlowSystem() = 0;
-	virtual PVOID GetIBudgetingSystem() = 0;
-	virtual PVOID GetINameTable() = 0;
-	virtual PVOID GetIDiskProfiler() = 0;
-	virtual PVOID GetProfilingSystem() = 0;
-	virtual PVOID GetLegacyProfilerInterface() = 0;
-	virtual PVOID GetIValidator() = 0;
-	virtual PVOID GetIPhysicsDebugRenderer() = 0;
-	virtual PVOID GetIPhysRenderer() = 0;
-	virtual PVOID GetIAnimationSystem() = 0;
-	virtual PVOID GetStreamEngine() = 0;
-	virtual PVOID GetICmdLine() = 0;
-	virtual PVOID GetILog() = 0;
-	virtual PVOID GetIPak() = 0;
-	virtual PVOID GetICryFont() = 0;
+	virtual void fn_16(void) = 0;
+	virtual void fn_17(void) = 0;
+	virtual void fn_18(void) = 0;
+	virtual void fn_19(void) = 0;
+	virtual void fn_20(void) = 0;
+	virtual void fn_21(void) = 0;
+	virtual void fn_22(void) = 0;
+	virtual void fn_23(void) = 0;
+	virtual void fn_24(void) = 0;
+	virtual void fn_25(void) = 0;
+	virtual void fn_26(void) = 0;
+	virtual void fn_27(void) = 0;
+	virtual void fn_28(void) = 0;
+	virtual void fn_29(void) = 0;
+	virtual void fn_30(void) = 0;
+	virtual void fn_31(void) = 0;
+	virtual void fn_32(void) = 0;
+	virtual void fn_33(void) = 0;
+	virtual void fn_34(void) = 0;
+	virtual void fn_35(void) = 0;
+	virtual void fn_36(void) = 0;
+	virtual void fn_37(void) = 0;
+	virtual void fn_38(void) = 0;
+	virtual void fn_39(void) = 0;
+	virtual void fn_40(void) = 0;
+	virtual void fn_41(void) = 0;
+	virtual void fn_42(void) = 0;
+	virtual void fn_43(void) = 0;
+	virtual void fn_44(void) = 0;
+	virtual void fn_45(void) = 0;
+	virtual void fn_46(void) = 0;
+	virtual void fn_47(void) = 0;
+	virtual void fn_48(void) = 0;
+	virtual void fn_49(void) = 0;
 	virtual IEntitySystem* GetIEntitySystem() = 0;
-	virtual PVOID GetIMemoryManager() = 0;
-	virtual PVOID GetAISystem() = 0;
-	virtual PVOID GetIMovieSystem() = 0;
-	virtual PVOID GetIPhysicalWorld() = 0;
-	virtual PVOID GetIAudioSystem() = 0;
-	virtual PVOID GetI3DEngine() = 0;
-	virtual PVOID GetIScriptSystem() = 0;
-	virtual PVOID GetIConsole() = 0;
-	virtual PVOID GetIRemoteConsole() = 0;
-	virtual PVOID GetIUserAnalyticsSystem() = 0;
-	virtual PVOID GetIPluginManager() = 0;
-	virtual PVOID GetIProjectManager() = 0;
-	virtual PVOID GetIUDR() = 0;
-	virtual PVOID GetIResourceManager() = 0;
-	virtual PVOID GetISystemEventDispatcher() = 0;
-	virtual PVOID GetIFileChangeMonitor() = 0;
+	virtual void fn_50(void) = 0;
+	virtual void fn_51(void) = 0;
+	virtual void fn_52(void) = 0;
+	virtual void fn_53(void) = 0;
+	virtual void fn_54(void) = 0;
+	virtual void fn_55(void) = 0;
+	virtual void fn_56(void) = 0;
+	virtual void fn_57(void) = 0;
+	virtual void fn_58(void) = 0;
+	virtual void fn_59(void) = 0;
+	virtual void fn_60(void) = 0;
+	virtual void fn_61(void) = 0;
+	virtual void fn_62(void) = 0;
+	virtual void fn_63(void) = 0;
+	virtual void fn_64(void) = 0;
+	virtual void fn_65(void) = 0;
 	virtual PVOID GetHWND() = 0;
 	virtual PVOID GetActiveHWND() = 0;
-	virtual PVOID GetINetwork() = 0;
+	virtual void fn_66(void) = 0;
 	virtual IRenderer* GetIRenderer() = 0;
-	virtual PVOID GetIInput() = 0;
-	virtual PVOID GetITimer() = 0;
-	virtual PVOID GetIThreadManager() = 0;
-	virtual PVOID GetIMonoEngineModule() = 0;
-
-	/* some more virtual functions */
 };
