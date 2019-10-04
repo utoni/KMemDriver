@@ -7,6 +7,125 @@
 
 struct ISystem;
 
+
+template<class _I> class _smart_ptr
+{
+private:
+	_I* p;
+public:
+	_smart_ptr() : p(NULL) {}
+	_smart_ptr(_I* p_)
+	{
+		p = p_;
+		if (p)
+			p->AddRef();
+	}
+	_smart_ptr(const _smart_ptr& p_)
+	{
+		p = p_.p;
+		if (p)
+			p->AddRef();
+	}
+	_smart_ptr(_smart_ptr&& p_) noexcept
+	{
+		p = p_.p;
+		p_.p = nullptr;
+	}
+	template<typename _Y>
+	_smart_ptr(const _smart_ptr<_Y>& p_)
+	{
+		p = p_.get();
+		if (p)
+			p->AddRef();
+	}
+	~_smart_ptr()
+	{
+		if (p)
+			p->Release();
+	}
+	operator _I*() const { return p; }
+
+	_I&         operator*() const { return *p; }
+	_I*         operator->(void) const { return p; }
+	_I*         get() const { return p; }
+	_smart_ptr& operator=(_I* newp)
+	{
+		if (newp != this->p)
+		{
+			_I* oldp = p;
+			p = newp;
+			if (p)
+				p->AddRef();
+			if (oldp)
+				oldp->Release();
+		}
+		return *this;
+	}
+	void reset()
+	{
+		_smart_ptr<_I>().swap(*this);
+	}
+	void reset(_I* p)
+	{
+		if (p != this->p)
+		{
+			_smart_ptr<_I>(p).swap(*this);
+		}
+	}
+	_smart_ptr& operator=(const _smart_ptr& newp)
+	{
+		if (newp.p != this->p)
+		{
+			if (newp.p)
+				newp.p->AddRef();
+			if (p)
+				p->Release();
+			p = newp.p;
+		}
+		return *this;
+	}
+	_smart_ptr& operator=(_smart_ptr&& p_)
+	{
+		if (this != &p_)
+		{
+			if (p)
+				p->Release();
+			p = p_.p;
+			p_.p = nullptr;
+		}
+		return *this;
+	}
+	template<typename _Y>
+	_smart_ptr& operator=(const _smart_ptr<_Y>& newp)
+	{
+		_I* const p2 = newp.get();
+		if (p2 != this->p)
+		{
+			if (p2)
+				p2->AddRef();
+			if (p)
+				p->Release();
+			p = p2;
+		}
+		return *this;
+	}
+	void swap(_smart_ptr<_I>& other)
+	{
+		std::swap(p, other.p);
+	}
+	void Assign_NoAddRef(_I* ptr)
+	{
+		CRY_ASSERT(!p, "Assign_NoAddRef should only be used on a default-constructed, not-yet-assigned smart_ptr instance");
+		p = ptr;
+	}
+	_I* ReleaseOwnership()
+	{
+		_I* ret = p;
+		p = 0;
+		return ret;
+	}
+};
+
 struct IEntity
 {
 public:
@@ -49,98 +168,45 @@ struct IEntityIt
 	virtual void MoveFirst() = 0;
 };
 
+typedef _smart_ptr<IEntityIt> IEntityItPtr;
+
 struct IEntitySystem
 {
 	virtual ~IEntitySystem() {}
-	virtual void Release() = 0;
-	virtual void PrePhysicsUpdate() = 0;
-	virtual void Update() = 0;
-	virtual void Reset() = 0;
-	virtual void Unload() = 0;
-	virtual void PurgeHeaps() = 0;
-	virtual void DeletePendingEntities() = 0;
-	virtual PVOID GetClassRegistry() = 0;
-	virtual PVOID GetReflectionRegistry() const = 0;
-	virtual PVOID SpawnEntity(void) = 0;
-	virtual bool InitEntity(void) = 0;
+	virtual void fn_00(void) = 0;
+	virtual void fn_01(void) = 0;
+	virtual void fn_02(void) = 0;
+	virtual void fn_03(void) = 0;
+	virtual void fn_04(void) = 0;
+	virtual void fn_05(void) = 0;
+	virtual void fn_06(void) = 0;
+	virtual void fn_07(void) = 0;
+	virtual void fn_08(void) const = 0;
+	virtual void fn_09(void) = 0;
+	virtual void fn_10(void) = 0;
 	virtual PVOID GetEntity(void) const = 0;
 	virtual PVOID FindEntityByName(void) const = 0;
-	virtual void ReserveEntityId(void) = 0;
-	virtual int ReserveNewEntityId() = 0;
-	virtual void RemoveEntity(void) = 0;
-	virtual unsigned int GetNumEntities(void) const = 0;
-	virtual PVOID GetEntityIterator() = 0;
-	virtual void SendEventToAll(void) = 0;
-	virtual void OnLevelLoaded() = 0;
-	virtual void OnLevelGameplayStart() = 0;
-	virtual int QueryProximity(void) = 0;
-	virtual void ResizeProximityGrid(int, int) = 0;
-	virtual int GetPhysicalEntitiesInBox(void) const = 0;
-	virtual PVOID GetEntityFromPhysics(PVOID) const = 0;
-	virtual void AddSink(PVOID) = 0;
-	virtual void RemoveSink(PVOID) = 0;
-	virtual void PauseTimers(bool bPause, bool bResume = false) = 0;
-	virtual bool IsIDUsed(int) const = 0;
-	virtual void GetMemoryStatistics(PVOID) const = 0;
+	virtual void fn_11(void) = 0;
+	virtual void fn_12(void) = 0;
+	virtual void fn_13(void) = 0;
+	virtual UINT32 GetNumEntities(void) const = 0;
+	virtual IEntityItPtr GetEntityIterator() = 0;
+	virtual void fn_14(void) = 0;
+	virtual void fn_15(void) = 0;
+	virtual void fn_16(void) = 0;
+	virtual void fn_17(void) = 0;
+	virtual void fn_18(void) = 0;
+	virtual void fn_19(void) const = 0;
+	virtual void fn_20(void) const = 0;
+	virtual void fn_21(void) = 0;
+	virtual void fn_22(void) = 0;
+	virtual void fn_23(void) = 0;
+	virtual void fn_24(void) = 0;
+	virtual void fn_25(void) const = 0;
 	virtual ISystem* GetSystem() const = 0;
-	virtual bool ExtractArcheTypeLoadParams(void) const = 0;
-	virtual bool ExtractEntityLoadParams(void) const = 0;
-	virtual void BeginCreateEntities(int amtToCreate) = 0;
-	virtual bool CreateEntity(void) = 0;
-	virtual void EndCreateEntities() = 0;
-	virtual void LoadEntities(bool bIsLoadingLevelFile) = 0;
-	virtual void LoadEntities(bool bIsLoadingLevelFile, const int) = 0;
-	virtual void AddEntityLayerListener(PVOID, PVOID, const bool bCaseSensitive = true) = 0;
-	virtual void RemoveEntityLayerListener(PVOID, PVOID, const bool bCaseSensitive = true) = 0;
-	virtual int FindEntityByGuid(int) const = 0;
-	virtual PVOID GetAreaManager() const = 0;
-	virtual PVOID GetBreakableManager() const = 0;
-	virtual PVOID LoadEntityArchetype(void) = 0;
-	virtual PVOID LoadEntityArchetype(const char* sArchetype) = 0;
-	virtual void  UnloadEntityArchetype(const char* sArchetype) = 0;
-	virtual PVOID CreateEntityArchetype(PVOID, const char* sArchetype) = 0;
-	virtual void  RefreshEntityArchetypesInRegistry() = 0;
-	virtual void  SetEntityArchetypeManagerExtension(PVOID) = 0;
-	virtual PVOID GetEntityArchetypeManagerExtension() const = 0;
-	virtual void Serialize(void) = 0;
-	virtual void SetNextSpawnId(int id) = 0;
-	virtual void ResetAreas() = 0;
-	virtual void UnloadAreas() = 0;
-	virtual void DumpEntities() = 0;
-	virtual void LockSpawning(bool lock) = 0;
-	virtual bool OnLoadLevel(const char* szLevelPath) = 0;
-	virtual PVOID AddLayer(const char* szName, const char* szParent, UINT16 id, bool bHasPhysics, int specs, bool bDefaultLoaded) = 0;
-	virtual void LoadLayers(const char* dataFile) = 0;
-	virtual void LinkLayerChildren() = 0;
-	virtual void AddEntityToLayer(const char* layer, int id) = 0;
-	virtual void RemoveEntityFromLayers(int id) = 0;
-	virtual void ClearLayers() = 0;
-	virtual void EnableDefaultLayers(bool isSerialized = true) = 0;
-	virtual void EnableLayer(const char* layer, bool isEnable, bool isSerialized = true) = 0;
-	virtual void EnableLayerSet(const char* const* pLayers, size_t layerCount, bool isSerialized = true, PVOID pListener = nullptr) = 0;
-	virtual void EnableScopedLayerSet(const char* const* pLayers, size_t layerCount, const char* const* pScopeLayers, size_t scopeLayerCount, bool isSerialized = true, PVOID pListener = nullptr) = 0;
-	virtual PVOID FindLayer(const char* szLayerName, const bool bCaseSensitive = true) const = 0;
-	virtual bool IsLayerEnabled(const char* layer, bool bMustBeLoaded, bool bCaseSensitive = true) const = 0;
-	virtual bool ShouldSerializedEntity(PVOID pEntity) = 0;
-	virtual void RegisterPhysicCallbacks() = 0;
-	virtual void UnregisterPhysicCallbacks() = 0;
-	virtual void PurgeDeferredCollisionEvents(bool bForce = false) = 0;
-	virtual void ResumePhysicsForSuppressedEntities(bool bWakeUp) = 0;
-	virtual void SaveInternalState(struct IDataWriteStream& writer) const = 0;
-	virtual void LoadInternalState(struct IDataReadStream& reader) = 0;
-	virtual int GetLayerId(const char* szLayerName) const = 0;
-	virtual const char* GetLayerName(int layerId) const = 0;
-	virtual int GetLayerChildCount(const char* szLayerName) const = 0;
-	virtual const char* GetLayerChild(const char* szLayerName, int childIdx) const = 0;
-	virtual int GetVisibleLayerIDs(UINT8* pLayerMask, const UINT32 maxCount) const = 0;
-	virtual void ToggleLayerVisibility(const char* layer, bool isEnabled, bool includeParent = true) = 0;
-	virtual void ToggleLayersBySubstring(const char* pSearchSubstring, const char* pExceptionSubstring, bool isEnable) = 0;
-	virtual PVOID CreateBSPTree3D(void) = 0;
-	virtual void ReleaseBSPTree3D(PVOID) = 0;
-	using StaticEntityNetworkIdentifier = UINT16;
-	virtual int GetEntityIdFromStaticEntityNetworkId(StaticEntityNetworkIdentifier id) const = 0;
 };
 
+/*
 template<typename T, int N>
 struct INumberArray
 {
@@ -219,6 +285,7 @@ struct IPersistantDebug
 	virtual void PostUpdate(float frameTime) = 0;
 	virtual void Reset() = 0;
 };
+*/
 
 struct IRenderer//: public IRendererCallbackServer
 {
@@ -396,7 +463,7 @@ struct IGameFramework
 	virtual bool CanCheat() = 0;
 	virtual const char* GetLevelName() = 0;
 	virtual void GetAbsLevelPath(char* pPathBuffer, UINT32 pathBufferSize) = 0;
-	virtual IPersistantDebug* GetIPersistantDebug() = 0;
+	virtual PVOID GetIPersistantDebug() = 0;
 	virtual void fn_85(void) = 0;
 	virtual void fn_86(void) = 0;
 	virtual void fn_87(void) = 0;
@@ -441,7 +508,7 @@ struct SSystemGlobalEnvironment {
 	UINT64 ukn_25;
 	UINT64 ukn_26;
 	IRenderer* pRenderer;
-	PVOID pAuxGeomRenderer; /* NullAuxGeromRenderer */
+	PVOID pAuxGeomRenderer; /* NullAuxGeomRenderer */
 	UINT64 ukn_27;
 	UINT64 ukn_28;
 	UINT64 ukn_29;
