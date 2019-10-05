@@ -13,22 +13,6 @@ struct ISystem;
 #define ENTITY_FLAG_SEND_RENDER_EVENT 0x20000
 #define ENTITY_FLAG_CASTSHADOW        0x1
 
-class Matrix34 {
-public:
-	float m00;
-	float m01;
-	float m02;
-	float m03;
-	float m10;
-	float m11;
-	float m12;
-	float m13;
-	float m20;
-	float m21;
-	float m22;
-	float m23;
-};
-
 template<class _I> class _smart_ptr
 {
 private:
@@ -157,7 +141,6 @@ struct INumberVector : INumberArray<T, N>
 {
 };
 
-template<typename F> struct Vec3_tpl;
 template<typename F> struct Vec3_tpl
 	: INumberVector<F, 3, Vec3_tpl<F>>
 {
@@ -167,9 +150,22 @@ public:
 };
 typedef Vec3_tpl<float> Vec3;
 
-static inline Vec3_tpl<float> TranslateMat34ToVec3(const Matrix34 &mat34) {
-	return Vec3_tpl<float>(mat34.m03, mat34.m13, mat34.m23);
-}
+class Matrix34 {
+public:
+	float m00;
+	float m01;
+	float m02;
+	float m03;
+	float m10;
+	float m11;
+	float m12;
+	float m13;
+	float m20;
+	float m21;
+	float m22;
+	float m23;
+	Vec3 GetTranslation() const { return Vec3(m03, m13, m23); }
+};
 
 enum EDrawTextFlags : UINT32
 {
