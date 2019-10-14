@@ -6,8 +6,11 @@
 #include <sstream>
 #include <array>
 
+#include <Windows.h>
+
 EXTERN_C BOOL WINAPI _CRT_INIT(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
 #pragma comment(lib, "Gdi32.lib")
+
 
 #if 0
 struct ResolvedDllEntry {
@@ -176,62 +179,25 @@ static bool resolve_all_symbols(void) {
 
 static UINT64 pEntSys = 0x0;
 static IEntitySystem * iEnt = NULL;
-static HWND HWND_Hunt = NULL;
-static HDC HDC_Hunt = NULL;
-static HBRUSH EnemyBrush = NULL;
-static COLORREF SnapLineCOLOR = NULL;
-static COLORREF TextCOLOR = NULL;
-static HFONT HFONT_Hunt = NULL;
-static bool GDI_initialized = false;
 
-static void SetupDrawing(HWND hWnd)
+static HWND myDrawWnd = NULL;
+static HINSTANCE hInstance = NULL;
+static WNDCLASS wc = { 0 };
+
+
+static inline void DrawString(HDC hdc, HFONT font,
+	int x, int y, COLORREF color, const char* text)
 {
-	HWND_Hunt = hWnd;
-	HDC_Hunt = GetDC(hWnd);
-	EnemyBrush = CreateSolidBrush(RGB(255, 0, 0));
-	//Color
-	SnapLineCOLOR = RGB(0, 0, 255);
-	TextCOLOR = RGB(0, 255, 0);
-	if (HWND_Hunt && HDC_Hunt && EnemyBrush && SnapLineCOLOR && TextCOLOR) {
-		GDI_initialized = true;
-	}
+	SetTextAlign(hdc, TA_CENTER | TA_NOUPDATECP);
+	SetBkColor(hdc, RGB(0, 0, 0));
+	SetBkMode(hdc, TRANSPARENT);
+	SetTextColor(hdc, color);
+	SelectObject(hdc, font);
+	TextOutA(hdc, x, y, text, (int)strlen(text));
+	DeleteObject(font);
 }
 
-static inline void DrawFilledRect(int x, int y, int w, int h)
-{
-	RECT rect = { x, y, x + w, y + h };
-	FillRect(HDC_Hunt, &rect, EnemyBrush);
-}
-
-static inline void DrawBorderBox(int x, int y, int w, int h, int thickness)
-{
-	DrawFilledRect(x, y, w, thickness);
-	DrawFilledRect(x, y, thickness, h);
-	DrawFilledRect((x + w), y, thickness, h);
-	DrawFilledRect(x, y + h, w + thickness, thickness);
-}
-
-static inline void DrawString(int x, int y, COLORREF color, const char* text)
-{
-	SetTextAlign(HDC_Hunt, TA_CENTER | TA_NOUPDATECP);
-	SetBkColor(HDC_Hunt, RGB(0, 0, 0));
-	SetBkMode(HDC_Hunt, TRANSPARENT);
-	SetTextColor(HDC_Hunt, color);
-	SelectObject(HDC_Hunt, HFONT_Hunt);
-	TextOutA(HDC_Hunt, x, y, text, (int)strlen(text));
-	DeleteObject(HFONT_Hunt);
-}
-
-static inline void DrawLine(int StartX, int StartY, int EndX, int EndY, COLORREF Pen)
-{
-	int a = 0;
-	HPEN hOPen;
-	HPEN hNPen = CreatePen(PS_SOLID, 2, Pen);
-	hOPen = (HPEN)SelectObject(HDC_Hunt, hNPen);
-	MoveToEx(HDC_Hunt, StartX, StartY, NULL);
-	a = LineTo(HDC_Hunt, EndX, EndY);
-	DeleteObject(SelectObject(HDC_Hunt, hOPen));
-}
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 void APIENTRY LibEntry(PVOID user_ptr)
 {
@@ -250,7 +216,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		void *bla = malloc(10);
 		free(bla);
 #endif
-#if 1
+
 		HINSTANCE addr = GetModuleHandle(NULL);
 		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
 
@@ -330,34 +296,124 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			return;
 		}
 
-		SetupDrawing(GetActiveWindow());
-
-		char buf[128];
-		snprintf(buf, sizeof buf, "---%p---\n",
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIPersistantDebug()
-		);
 		AllocConsole();
 		freopen("CONOUT$", "w", stdout);
 		SetWindowTextA(GetConsoleWindow(), "Hunted");
 		printf("Welcome.\n");
-		printf("%s--%s--%u--%u--%s--%d\n", buf, iEnt->GetSystem()->GetRootFolder(),
+		printf("[used memory: %u][cpu flags: %u][user name: %s][cpu count: %d]\n",
 			iEnt->GetSystem()->GetUsedMemory(),
 			iEnt->GetSystem()->GetCPUFlags(),
 			iEnt->GetSystem()->GetUserName(),
 			iEnt->GetSystem()->GetLogicalCPUCount());
-		//iEnt->GetSystem()->Quit();
-#else
-		MessageBoxA(NULL,
-			"TEST !!!",
-			"TestDLL Notification",
-			MB_OK | MB_ICONINFORMATION);
-#endif
+
+		hInstance = (HINSTANCE)GetWindowLongW(GetActiveWindow(), -6);
+		wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+		wc.hCursor = LoadCursor(hInstance, IDC_ARROW);
+		wc.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
+		wc.hInstance = hInstance;
+		wc.lpfnWndProc = WndProc;
+		wc.lpszClassName = L"peter";
+		wc.style = CS_HREDRAW | CS_VREDRAW;
+
+		UnregisterClassW(L"peter", hInstance);
+		if (!RegisterClass(&wc))
+		{
+			return;   // ERR, SO QUIT
+		}
+
+		myDrawWnd = CreateWindowW(L"peter",
+			L"the window",
+			WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_MAXIMIZEBOX,
+			25, 25, 640, 480,
+			NULL, NULL, hInstance, NULL);
+		ShowWindow(myDrawWnd, SW_SHOWNORMAL);
+		UpdateWindow(myDrawWnd);
 	}
-#if 1
-	if (GDI_initialized) {
-		DrawBorderBox(5, 5, 50, 50, 3);
-		DrawLine(125, 125, 515, 515, SnapLineCOLOR);
-		DrawString(900, 900, TextCOLOR, "BLABLABLA!");
+
+	MSG msg;
+	while (PeekMessageA(&msg, myDrawWnd, 0, 0, PM_REMOVE))
+	{
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
-#endif
+}
+
+LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
+{
+	static HBRUSH EnemyBrush = NULL;
+	static HBRUSH BackgroundBrush = NULL;
+	static COLORREF SnapLineCOLOR = NULL;
+	static COLORREF TextCOLOR = NULL;
+	static HFONT HFONT_Hunt = NULL;
+	static RECT DC_Dimensions = {};
+	static HDC hdc = NULL;
+
+	if (!iEnt || iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInLevelLoad()) {
+		return 0;
+	}
+
+	switch (message)
+	{
+	case WM_CREATE:
+		hdc = GetDC(hwnd);
+		EnemyBrush = CreateSolidBrush(RGB(255, 0, 0));
+		BackgroundBrush = CreateSolidBrush(RGB(0, 0, 0));
+		SnapLineCOLOR = RGB(0, 0, 255);
+		TextCOLOR = RGB(0, 255, 0);
+		return 0;
+		break;
+	case WM_PAINT:
+	{
+		PAINTSTRUCT ps;
+
+		BeginPaint(hwnd, &ps);
+		RECT rect = { 25, 25, 255, 255 };
+		FillRect(hdc, &rect, EnemyBrush);
+
+		SIZE_T i = 1;
+		IEntityItPtr pEntIt = iEnt->GetEntityIterator();
+		while (IEntity* pEnt = pEntIt->Next()) {
+			if (!pEnt->IsInitialized() || pEnt->IsGarbage()) {
+				continue;
+			}
+			if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
+				continue;
+			}
+			const char *name = pEnt->GetName();
+			if (strlen(name) < 4) {
+				continue;
+			}
+			if (name[0] != 'H' || name[1] != 'u' || name[2] != 'n' || name[3] != 't') {
+				continue;
+			}
+
+			i++;
+		}
+
+		EndPaint(hwnd, &ps);
+		return 0;
+	}
+	break;
+	case WM_LBUTTONDOWN:
+		return 0;
+		break;
+	case WM_NCLBUTTONDOWN:
+		break;
+	case WM_CHAR:
+		return 0;
+		break;
+	case WM_MOVE:
+		return 0;
+		break;
+	case WM_SIZE:
+		GetClientRect(hwnd, &DC_Dimensions);
+		FillRect(hdc, &DC_Dimensions, BackgroundBrush);
+		return 0;
+		break;
+	case WM_DESTROY:
+		PostQuitMessage(0);
+		return 0;
+		break;
+	}
+	return DefWindowProc(hwnd, message, wparam, lparam);
 }
