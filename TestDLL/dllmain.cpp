@@ -6,10 +6,10 @@
 #include <sstream>
 #include <array>
 
+#include <GdiRadar.h>
 #include <Windows.h>
 
 EXTERN_C BOOL WINAPI _CRT_INIT(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpReserved);
-#pragma comment(lib, "Gdi32.lib")
 
 
 #if 0
@@ -177,27 +177,10 @@ static bool resolve_all_symbols(void) {
 }
 #endif
 
+static gdi_radar_context * ctx = NULL;
 static UINT64 pEntSys = 0x0;
 static IEntitySystem * iEnt = NULL;
 
-static HWND myDrawWnd = NULL;
-static HINSTANCE hInstance = NULL;
-static WNDCLASS wc = { 0 };
-
-
-static inline void DrawString(HDC hdc, HFONT font,
-	int x, int y, COLORREF color, const char* text)
-{
-	SetTextAlign(hdc, TA_CENTER | TA_NOUPDATECP);
-	SetBkColor(hdc, RGB(0, 0, 0));
-	SetBkMode(hdc, TRANSPARENT);
-	SetTextColor(hdc, color);
-	SelectObject(hdc, font);
-	TextOutA(hdc, x, y, text, (int)strlen(text));
-	DeleteObject(font);
-}
-
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 void APIENTRY LibEntry(PVOID user_ptr)
 {
@@ -297,7 +280,9 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		}
 
 		AllocConsole();
-		freopen("CONOUT$", "w", stdout);
+		FILE * conout = NULL;
+		freopen_s(&conout, "CONOUT$", "w", stdout);
+
 		SetWindowTextA(GetConsoleWindow(), "Hunted");
 		printf("Welcome.\n");
 		printf("[used memory: %u][cpu flags: %u][user name: %s][cpu count: %d]\n",
@@ -306,114 +291,71 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			iEnt->GetSystem()->GetUserName(),
 			iEnt->GetSystem()->GetLogicalCPUCount());
 
-		hInstance = (HINSTANCE)GetWindowLongW(GetActiveWindow(), -6);
-		wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
-		wc.hCursor = LoadCursor(hInstance, IDC_ARROW);
-		wc.hIcon = LoadIcon(hInstance, IDI_APPLICATION);
-		wc.hInstance = hInstance;
-		wc.lpfnWndProc = WndProc;
-		wc.lpszClassName = L"peter";
-		wc.style = CS_HREDRAW | CS_VREDRAW;
+		gdi_radar_config cfg = {};
+		cfg.className = L"HR";
+		cfg.windowName = L"HRWND";
+		cfg.minimumUpdateTime = 0.25f;
+		cfg.maximumRedrawFails = 5;
+		cfg.reservedEntities = 16;
 
-		UnregisterClassW(L"peter", hInstance);
-		if (!RegisterClass(&wc))
+		printf("Configure.\n");
+		ctx = gdi_radar_configure(&cfg, gdi_radar_get_fake_hinstance());
+		if (!ctx)
 		{
-			return;   // ERR, SO QUIT
+			printf("Configure failed.\n");
+			return;
 		}
 
-		myDrawWnd = CreateWindowW(L"peter",
-			L"the window",
-			WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_TOOLWINDOW | WS_MAXIMIZEBOX,
-			25, 25, 640, 480,
-			NULL, NULL, hInstance, NULL);
-		ShowWindow(myDrawWnd, SW_SHOWNORMAL);
-		UpdateWindow(myDrawWnd);
-	}
+		gdi_radar_set_game_dimensions(ctx, 1020.0f, 1020.0f);
 
-	MSG msg;
-	while (PeekMessageA(&msg, myDrawWnd, 0, 0, PM_REMOVE))
-	{
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		if (!gdi_radar_init(ctx))
+		{
+			printf("Init failed.\n");
+			return;
+		}
 	}
-}
-
-LRESULT CALLBACK WndProc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	static HBRUSH EnemyBrush = NULL;
-	static HBRUSH BackgroundBrush = NULL;
-	static COLORREF SnapLineCOLOR = NULL;
-	static COLORREF TextCOLOR = NULL;
-	static HFONT HFONT_Hunt = NULL;
-	static RECT DC_Dimensions = {};
-	static HDC hdc = NULL;
 
 	if (!iEnt || iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInLevelLoad()) {
-		return 0;
+		return;
 	}
 
-	switch (message)
-	{
-	case WM_CREATE:
-		hdc = GetDC(hwnd);
-		EnemyBrush = CreateSolidBrush(RGB(255, 0, 0));
-		BackgroundBrush = CreateSolidBrush(RGB(0, 0, 0));
-		SnapLineCOLOR = RGB(0, 0, 255);
-		TextCOLOR = RGB(0, 255, 0);
-		return 0;
-		break;
-	case WM_PAINT:
-	{
-		PAINTSTRUCT ps;
+	gdi_radar_clear_entities(ctx);
 
-		BeginPaint(hwnd, &ps);
-		RECT rect = { 25, 25, 255, 255 };
-		FillRect(hdc, &rect, EnemyBrush);
-
-		SIZE_T i = 1;
-		IEntityItPtr pEntIt = iEnt->GetEntityIterator();
-		while (IEntity* pEnt = pEntIt->Next()) {
-			if (!pEnt->IsInitialized() || pEnt->IsGarbage()) {
-				continue;
-			}
-			if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
-				continue;
-			}
-			const char *name = pEnt->GetName();
-			if (strlen(name) < 4) {
-				continue;
-			}
-			if (name[0] != 'H' || name[1] != 'u' || name[2] != 'n' || name[3] != 't') {
-				continue;
-			}
-
-			i++;
+	SIZE_T i = 1;
+	IEntityItPtr pEntIt = iEnt->GetEntityIterator();
+	while (IEntity* pEnt = pEntIt->Next()) {
+		if (!pEnt->IsInitialized() || pEnt->IsGarbage()) {
+			continue;
+		}
+#if 0
+		if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
+			continue;
+		}
+#endif
+		const char *name = pEnt->GetName();
+		if (strlen(name) < 4) {
+			continue;
+		}
+		if (name[0] != 'H' || name[1] != 'u' || name[2] != 'n' || name[3] != 't') {
+			continue;
 		}
 
-		EndPaint(hwnd, &ps);
-		return 0;
+		Vec3 entPos = pEnt->GetPos();
+		entPos.x -= 500.0f;
+		entPos.y -= 500.0f;
+		entPos.y = 1020.0f - entPos.y;
+		entity radar_entity{ (int)entPos.x, (int)entPos.y, 100.0f, entity_color::EC_RED, "test" };
+		gdi_radar_add_entity(ctx, &radar_entity);
+
+		i++;
 	}
-	break;
-	case WM_LBUTTONDOWN:
-		return 0;
-		break;
-	case WM_NCLBUTTONDOWN:
-		break;
-	case WM_CHAR:
-		return 0;
-		break;
-	case WM_MOVE:
-		return 0;
-		break;
-	case WM_SIZE:
-		GetClientRect(hwnd, &DC_Dimensions);
-		FillRect(hdc, &DC_Dimensions, BackgroundBrush);
-		return 0;
-		break;
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		return 0;
-		break;
+
+	if (i == 1) {
+		printf("Reint.\n");
+		//firstEntry = true;
+		return;
 	}
-	return DefWindowProc(hwnd, message, wparam, lparam);
+
+	gdi_radar_redraw_if_necessary(ctx);
+	gdi_radar_process_window_events_nonblocking(ctx);
 }
