@@ -483,6 +483,167 @@ struct IRenderer//: public IRendererCallbackServer
 	virtual void SubmitAuxGeom(IRenderAuxGeom* pRenderAuxGeom, bool merge = true) = 0;
 };
 
+/* generated with: "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\bin\Hostx64\x64\cl.exe" /Zp2 /c /d1reportSingleClassLayoutIActor C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryAction\ActorSystem.cpp /I C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryCommon /I "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.16.27023\include" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\ucrt" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\shared" /I "C:\Program Files (x86)\Windows Kits\10\Include\10.0.17763.0\um" /I "C:\Users\segfault\Source\Repos\CRYENGINE\Code\CryEngine\CryAction" */
+struct IActor
+{
+	virtual void fn_00(void) = 0;
+	virtual ~IActor(void) = 0;
+	virtual void fn_01(void) = 0;
+	virtual void fn_02(void) = 0;
+	virtual void fn_03(void) = 0;
+	virtual void fn_04(void) = 0;
+	virtual void fn_05(void) = 0;
+	virtual void fn_06(void) = 0;
+	virtual void fn_07(void) = 0;
+	virtual void fn_08(void) = 0;
+	virtual void fn_09(void) = 0;
+	virtual void fn_10(void) = 0;
+	virtual void fn_11(void) = 0;
+	virtual void fn_12(void) = 0;
+	virtual void fn_13(void) = 0;
+	virtual void fn_14(void) = 0;
+	virtual void fn_15(void) = 0;
+	virtual void fn_16(void) = 0;
+	virtual void fn_17(void) = 0;
+	virtual void fn_18(void) = 0;
+	virtual void fn_19(void) = 0;
+	virtual void fn_20(void) = 0;
+	virtual void fn_21(void) = 0;
+	virtual void fn_22(void) = 0;
+	virtual void fn_23(void) = 0;
+	virtual void fn_24(void) = 0;
+	virtual void fn_25(void) = 0;
+	virtual void fn_26(void) = 0;
+	virtual void fn_27(void) = 0;
+	virtual void fn_28(void) = 0;
+	virtual void fn_29(void) = 0;
+	virtual void fn_30(void) = 0;
+	virtual void fn_31(void) = 0;
+	virtual void fn_32(void) = 0;
+	virtual void fn_33(void) = 0;
+	virtual void IActor_SetChannelId(void) = 0;
+	virtual void fn_34(void) = 0;
+	virtual void fn_35(void) = 0;
+	virtual void fn_36(void) = 0;
+
+	virtual void                  SetHealth(float health) = 0;
+	virtual float                 GetHealth() const = 0;
+	virtual int                   GetHealthAsRoundedPercentage() const = 0;
+	virtual void                  SetMaxHealth(float maxHealth) = 0;
+	virtual float                 GetMaxHealth() const = 0;
+	virtual int                   GetArmor() const = 0;
+	virtual int                   GetMaxArmor() const = 0;
+	virtual int                   GetTeamId() const = 0;
+	virtual bool                  IsFallen() const = 0;
+	virtual bool                  IsDead() const = 0;
+	virtual int                   IsGod() = 0;
+	virtual void                  Fall(Vec3 hitPos = Vec3(0, 0, 0)) = 0;
+	virtual bool                  AllowLandingBob() = 0;
+	virtual void                  PlayAction(const char* action, const char* extension, bool looping = false) = 0;
+	virtual PVOID                 GetAnimationGraphState() = 0;
+	virtual void                  ResetAnimationState() = 0;
+	virtual void                  CreateScriptEvent(const char* event, float value, const char* str = NULL) = 0;
+	virtual bool                  BecomeAggressiveToAgent(int entityID) = 0;
+	virtual void                  SetFacialAlertnessLevel(int alertness) = 0;
+	virtual void                  RequestFacialExpression(const char* pExpressionName = NULL, float* sequenceLength = NULL) = 0;
+	virtual void                  PrecacheFacialExpression(const char* pExpressionName) = 0;
+	virtual int                   GetGrabbedEntityId() const = 0;
+	virtual void                  HideAllAttachments(bool isHiding) = 0;
+	virtual void                  SetIKPos(const char* pLimbName, const Vec3& goalPos, int priority) = 0;
+	virtual void                  SetViewInVehicle(PVOID viewRotation) = 0;
+	virtual void                  SetViewRotation(PVOID rotation) = 0;
+	virtual PVOID                 GetViewRotation() const = 0;
+	virtual bool                  IsFriendlyEntity(int entityId, bool bUsingAIIgnorePlayer = true) const = 0;
+	virtual Vec3                  GetLocalEyePos() const = 0;
+	virtual void                  CameraShake(float angle, float shift, float duration, float frequency, Vec3 pos, int ID, const char* source = "") = 0;
+	virtual PVOID                 GetHolsteredItem() const = 0;
+	virtual void                  HolsterItem(bool holster, bool playSelect = true, float selectSpeedBias = 1.0f, bool hideLeftHandObject = true) = 0;
+	virtual PVOID                 GetCurrentItem(bool includeVehicle = false) const = 0;
+	virtual bool                  DropItem(int itemId, float impulseScale = 1.0f, bool selectNext = true, bool byDeath = false) = 0;
+	virtual PVOID                 GetInventory() const = 0;
+	virtual void                  NotifyCurrentItemChanged(PVOID newItem) = 0;
+	virtual PVOID                 GetMovementController() const = 0;
+	virtual IEntity*              LinkToVehicle(int vehicleId) = 0;
+	virtual IEntity*              GetLinkedEntity() const = 0;
+	virtual UINT8                 GetSpectatorMode() const = 0;
+	virtual bool                  IsThirdPerson() const = 0;
+	virtual void                  ToggleThirdPerson() = 0;
+	virtual bool                  IsStillWaitingOnServerUseResponse() const { return false; }
+	virtual void                  SetStillWaitingOnServerUseResponse(bool waiting) {}
+	virtual void                  SetFlyMode(UINT8 flyMode) {};
+	virtual UINT8                 GetFlyMode() const { return 0; };
+	virtual void                  Release() = 0;
+	virtual bool                  IsPlayer() const = 0;
+	virtual bool                  IsClient() const = 0;
+	virtual bool                  IsMigrating() const = 0;
+	virtual void                  SetMigrating(bool isMigrating) = 0;
+	virtual void                  InitLocalPlayer() = 0;
+	virtual const char*           GetActorClassName() const = 0;
+	virtual PVOID                 GetActorClass() const = 0;
+	virtual const char*           GetEntityClassName() const = 0;
+	virtual void                  SerializeLevelToLevel(PVOID ser) = 0;
+	virtual void                  ProcessEvent(const PVOID event) = 0;
+	virtual PVOID                 GetAnimatedCharacter() = 0;
+	virtual const PVOID           GetAnimatedCharacter() const = 0;
+	virtual void                  PlayExactPositioningAnimation(const char* sAnimationName, bool bSignal, const Vec3& vPosition, const Vec3& vDirection, float startWidth, float startArcAngle, float directionTolerance) = 0;
+	virtual void                  CancelExactPositioningAnimation() = 0;
+	virtual void                  PlayAnimation(const char* sAnimationName, bool bSignal) = 0;
+	virtual bool                  Respawn() { return false; }
+	virtual void                  ResetToSpawnLocation() {}
+	virtual bool                  CanBreakGlass() const { return false; }
+	virtual bool                  MustBreakGlass() const { return false; }
+	virtual void                  EnableTimeDemo(bool bTimeDemo) = 0;
+	void                          SetChannelId(UINT16 id) {}
+	virtual void                  SwitchDemoModeSpectator(bool activate) = 0;
+	virtual void                  SetCustomHead(const char* customHead) {};
+	virtual PVOID                 GetLinkedVehicle() const = 0;
+	virtual bool                  GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
+	virtual void                  SetExpectedPhysicsPos(const Vec3& expectedPosition) = 0;
+	virtual void                  OnAIProxyEnabled(bool enabled) = 0;
+	virtual void                  OnReturnedToPool() = 0;
+	virtual void                  OnPreparedFromPool() = 0;
+	virtual void                  OnShiftWorld() {};
+	virtual void                  MountedGunControllerEnabled(bool val) {};
+	virtual bool                  MountedGunControllerEnabled() const { return false; }
+	virtual bool                  ShouldMuteWeaponSoundStimulus() const = 0;
+	virtual int                   GetPhysicalSkipEntities(PVOID pSkipList, const int maxSkipSize) const { return 0; }
+	virtual void                  OnReused(IEntity* pEntity, PVOID params) = 0;
+	virtual bool                  IsInteracting() const = 0;
+};
+
+struct IActorIterator
+{
+	virtual ~IActorIterator() {}
+	virtual size_t  Count() = 0;
+	virtual IActor* Next() = 0;
+	virtual void    AddRef() = 0;
+	virtual void    Release() = 0;
+};
+typedef _smart_ptr<IActorIterator> IActorIteratorPtr;
+
+struct IActorSystem
+{
+	virtual ~IActorSystem() {}
+	virtual void                   Reset() = 0;
+	virtual void                   Reload() = 0;
+	virtual IActor*                GetActor(int entityId) = 0;
+	virtual IActor*                GetActorByChannelId(UINT16 channelId) = 0;
+	virtual IActor*                fn_00(void) = 0;
+	virtual int                    GetActorCount() const = 0;
+	virtual IActorIteratorPtr      CreateActorIterator() = 0;
+	virtual void                   SetDemoPlaybackMappedOriginalServerPlayer(int id) = 0;
+	virtual int                    GetDemoPlaybackMappedOriginalServerPlayer() const = 0;
+	virtual void                   SwitchDemoSpectator(int id = 0) = 0;
+	virtual IActor*                GetCurrentDemoSpectator() = 0;
+	virtual IActor*                GetOriginalDemoSpectator() = 0;
+	virtual void                   AddActor(int entityId, IActor* pActor) = 0;
+	virtual void                   RemoveActor(int entityId) = 0;
+	virtual void                   Scan(const char* folderName) = 0;
+	virtual bool                   fn_01(void) = 0;
+	virtual const PVOID            GetActorParams(const char* actorClass) const = 0;
+	virtual bool                   IsActorClass(PVOID pClass) const = 0;
+};
+
 struct IGameFramework
 {
 	virtual void fn_00(void) = 0;
@@ -512,7 +673,7 @@ struct IGameFramework
 	virtual void fn_19(void) = 0;
 	virtual void fn_20(void) = 0;
 	virtual void fn_21(void) = 0;
-	virtual void fn_22(void) = 0;
+	virtual IActorSystem* GetIActorSystem(void) = 0;
 	virtual void fn_23(void) = 0;
 	virtual void fn_24(void) = 0;
 	virtual void fn_25(void) = 0;
