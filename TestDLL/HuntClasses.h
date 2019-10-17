@@ -569,8 +569,8 @@ struct IActor
 	virtual bool                  IsThirdPerson() const = 0;
 	virtual void                  ToggleThirdPerson() = 0;
 	virtual bool                  IsStillWaitingOnServerUseResponse() const { return false; }
-	virtual void                  SetStillWaitingOnServerUseResponse(bool waiting) {}
-	virtual void                  SetFlyMode(UINT8 flyMode) {};
+	virtual void                  SetStillWaitingOnServerUseResponse(bool waiting) { UNREFERENCED_PARAMETER(waiting); }
+	virtual void                  SetFlyMode(UINT8 flyMode) { UNREFERENCED_PARAMETER(flyMode); };
 	virtual UINT8                 GetFlyMode() const { return 0; };
 	virtual void                  Release() = 0;
 	virtual bool                  IsPlayer() const = 0;
@@ -593,9 +593,9 @@ struct IActor
 	virtual bool                  CanBreakGlass() const { return false; }
 	virtual bool                  MustBreakGlass() const { return false; }
 	virtual void                  EnableTimeDemo(bool bTimeDemo) = 0;
-	void                          SetChannelId(UINT16 id) {}
+	void                          SetChannelId(UINT16 id) { UNREFERENCED_PARAMETER(id); }
 	virtual void                  SwitchDemoModeSpectator(bool activate) = 0;
-	virtual void                  SetCustomHead(const char* customHead) {};
+	virtual void                  SetCustomHead(const char* customHead) { UNREFERENCED_PARAMETER(customHead); };
 	virtual PVOID                 GetLinkedVehicle() const = 0;
 	virtual bool                  GetValidPositionNearby(const Vec3& proposedPosition, Vec3& adjustedPosition) const = 0;
 	virtual void                  SetExpectedPhysicsPos(const Vec3& expectedPosition) = 0;
@@ -603,10 +603,15 @@ struct IActor
 	virtual void                  OnReturnedToPool() = 0;
 	virtual void                  OnPreparedFromPool() = 0;
 	virtual void                  OnShiftWorld() {};
-	virtual void                  MountedGunControllerEnabled(bool val) {};
+	virtual void                  MountedGunControllerEnabled(bool val) { UNREFERENCED_PARAMETER(val); };
 	virtual bool                  MountedGunControllerEnabled() const { return false; }
 	virtual bool                  ShouldMuteWeaponSoundStimulus() const = 0;
-	virtual int                   GetPhysicalSkipEntities(PVOID pSkipList, const int maxSkipSize) const { return 0; }
+	virtual int                   GetPhysicalSkipEntities(PVOID pSkipList, const int maxSkipSize) const
+	{
+		UNREFERENCED_PARAMETER(pSkipList);
+		UNREFERENCED_PARAMETER(maxSkipSize);
+		return 0;
+	}
 	virtual void                  OnReused(IEntity* pEntity, PVOID params) = 0;
 	virtual bool                  IsInteracting() const = 0;
 };
