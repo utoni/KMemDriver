@@ -181,7 +181,7 @@ int wmain(int argc, wchar_t **argv)
 							std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
 
 							UINT64 g_pEnvSys = 0;
-							g_pEnvSys = (UINT64)md.DllBase + 0x28C3F8;
+							g_pEnvSys = (UINT64)md.DllBase + 0x28E3F8;
 
 							for (MODULE_DATA& md : modules) {
 								if (!strncmp(md.BaseDllName, "CryAction.dll",
@@ -251,8 +251,8 @@ int wmain(int argc, wchar_t **argv)
 										  0xFF, 0xE0 };
 							*(UINT64 *)((BYTE *)cc + 31) = g_pEnvSys;
 							*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
-							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +275 */
-							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70885;
+							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x275 */
+							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x708F5;
 							*(UINT64 *)((BYTE *)cc + 81) = jumpBackAddr;
 							printBuf(cc, sizeof cc, 32);
 							KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
@@ -260,8 +260,8 @@ int wmain(int argc, wchar_t **argv)
 							BYTE dd[] = { 0x48, 0xB8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xE0 };
 							*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 							printBuf(dd, sizeof dd, 32);
-							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +9 */
-							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70619), &dd[0]);
+							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x9 */
+							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70689), &dd[0]);
 #if 0
 							Sleep(1000);
 							if (!ki.VUnlink(targetPID, targetAddr)) {
