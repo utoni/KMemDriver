@@ -2,20 +2,37 @@
 //
 
 #include "pch.h"
+#include "KInterface.h"
+
 #include <iostream>
 
 int main()
 {
-    std::cout << "Hello World!\n"; 
+	std::cout << "IntegrationTest\n";
+
+	try {
+		KInterface &ki = KInterface::getInstance();
+		if (!ki.Init()) {
+			std::wcout << L"Kernel Interface Init() failed" << std::endl;
+			goto error;
+		}
+		if (!ki.Handshake()) {
+			std::wcout << L"Kernel Interface Handshake() failed" << std::endl;
+			goto error;
+		}
+		if (ki.RecvWait() == SRR_TIMEOUT) {
+			std::wcout << L"Ping -> ";
+			if (!ki.Ping()) {
+				std::wcout << L"Got no valid PONG, abort!" << std::endl;
+			}
+			else std::wcout << L"PONG!" << std::endl;
+		}
+		std::wcout << L"Driver shutdown .." << std::endl;
+		ki.Exit();
+	}
+	catch (std::runtime_error& err) {
+		std::wcout << err.what() << std::endl;
+	}
+error:
+	Sleep(3000);
 }
-
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
-
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
