@@ -182,6 +182,93 @@ static UINT64 pEntSys = 0x0;
 static IEntitySystem * iEnt = NULL;
 
 
+static bool InitAndCheckPtr(PVOID user_ptr)
+{
+	pEntSys = *(UINT64*)user_ptr;
+	iEnt = *(IEntitySystem **)user_ptr;
+
+	if (iEnt->GetNumEntities() > 65535) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: Invalid number of Entities: VALUE[%d] > 65535\n",
+			iEnt->GetNumEntities());
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;;
+	}
+#define PENTITYSYSTEM_ISYSTEM_OFFSET 104
+	if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: ISystem interface instance not equal: MEMBER[%p] != GETSYSTEM[%p]\n",
+			(PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)), iEnt->GetSystem());
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;;
+	}
+	if ((PVOID)pEntSys != iEnt->GetSystem()->GetIEntitySystem()) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != GETENTITYSYSTEM[%p]\n",
+			(PVOID)pEntSys, iEnt->GetSystem()->GetIEntitySystem());
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+	if ((PVOID)pEntSys != iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != pEntitySystem[%p]\n",
+			(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+	if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem()) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
+			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem());
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+	if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pSystem) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+	if (iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer != iEnt->GetSystem()->GetIRenderer()) {
+		char errbuf[128];
+		snprintf(errbuf, sizeof errbuf,
+			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
+		MessageBoxA(NULL,
+			errbuf,
+			"Hunted WARNING",
+			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+
+	return true;
+}
+
 void APIENTRY LibEntry(PVOID user_ptr)
 {
 	static bool firstEntry = true;
@@ -203,79 +290,8 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		HINSTANCE addr = GetModuleHandle(NULL);
 		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
 
-		pEntSys = *(UINT64*)user_ptr;
-		iEnt = *(IEntitySystem **)user_ptr;
-
-#define PENTITYSYSTEM_ISYSTEM_OFFSET 104
-		if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: ISystem interface instance not equal: MEMBER[%p] != GETSYSTEM[%p]\n",
-				(PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)), iEnt->GetSystem());
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-
-		if ((PVOID)pEntSys != iEnt->GetSystem()->GetIEntitySystem()) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != GETENTITYSYSTEM[%p]\n",
-				(PVOID)pEntSys, iEnt->GetSystem()->GetIEntitySystem());
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-
-		if ((PVOID)pEntSys != iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != pEntitySystem[%p]\n",
-				(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-
-		if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem()) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
-				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem());
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-
-		if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pSystem) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
-				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-
-		if (iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer != iEnt->GetSystem()->GetIRenderer()) {
-			char errbuf[128];
-			snprintf(errbuf, sizeof errbuf,
-				"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
-				iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
-			MessageBoxA(NULL,
-				errbuf,
-				"Hunted WARNING",
-				MB_OK | MB_ICONINFORMATION);
+		if (!InitAndCheckPtr(user_ptr))
+		{
 			return;
 		}
 
@@ -350,12 +366,12 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		i++;
 	}
 
-	if (i == 1) {
-		printf("Reint.\n");
-		//firstEntry = true;
+	//printf("__%d__\n", iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIActorSystem()->GetActorCount());
+	if (!gdi_radar_redraw_if_necessary(ctx)) {
+		printf("Reint (redraw failed).\n");
+		gdi_radar_close_and_cleanup(&ctx);
 		return;
 	}
 
-	gdi_radar_redraw_if_necessary(ctx);
 	gdi_radar_process_window_events_nonblocking(ctx);
-}
+	}
