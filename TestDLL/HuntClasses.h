@@ -856,11 +856,11 @@ struct ISystem
 	virtual void fn_12(void) = 0;
 	virtual void Quit() = 0;
 	virtual void Relaunch(bool bRelaunch) = 0;
-	virtual bool IsQuitting() const = 0;
+	virtual UINT32 IsQuitting() const = 0;
 	virtual void fn_13(void) = 0;
 	virtual void fn_14(void) = 0;
 	virtual void fn_15(void) = 0;
-	virtual bool IsRelaunch() const = 0;
+	virtual UINT32 IsRelaunch() const = 0;
 	virtual void fn_16(void) = 0;
 	virtual void fn_17(void) = 0;
 	virtual void fn_18(void) = 0;
@@ -894,7 +894,6 @@ struct ISystem
 	virtual void fn_46(void) = 0;
 	virtual void fn_47(void) = 0;
 	virtual void fn_48(void) = 0;
-	virtual void fn_49(void) = 0;
 	virtual IEntitySystem* GetIEntitySystem() = 0;
 	virtual void fn_50(void) = 0;
 	virtual void fn_51(void) = 0;
