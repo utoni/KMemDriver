@@ -182,11 +182,20 @@ static UINT64 pEntSys = 0x0;
 static IEntitySystem * iEnt = NULL;
 
 
+#define SHOW_WARNING(format, ...) \
+    do { char errbuf[128]; \
+        snprintf(errbuf, sizeof errbuf, "WARNING: " # format, __VA_ARGS__); \
+        MessageBoxA(NULL, errbuf, "Hunted WARNING",	MB_OK | MB_ICONINFORMATION); \
+	} while (0);
+
 static bool InitAndCheckPtr(PVOID user_ptr)
 {
+	char reserved_stack_space[256];
+
 	pEntSys = *(UINT64*)user_ptr;
 	iEnt = *(IEntitySystem **)user_ptr;
 
+	ZeroMemory(&reserved_stack_space[0], sizeof reserved_stack_space);
 	if (iEnt->GetNumEntities() > 65535) {
 		char errbuf[128];
 		snprintf(errbuf, sizeof errbuf,
@@ -196,7 +205,7 @@ static bool InitAndCheckPtr(PVOID user_ptr)
 			errbuf,
 			"Hunted WARNING",
 			MB_OK | MB_ICONINFORMATION);
-		return false;;
+		return false;
 	}
 #define PENTITYSYSTEM_ISYSTEM_OFFSET 104
 	if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
@@ -208,7 +217,27 @@ static bool InitAndCheckPtr(PVOID user_ptr)
 			errbuf,
 			"Hunted WARNING",
 			MB_OK | MB_ICONINFORMATION);
-		return false;;
+		return false;
+	}
+	if (iEnt->GetSystem()->GetLogicalCPUCount() < 1 ||
+		iEnt->GetSystem()->GetLogicalCPUCount() > 32)
+	{
+		SHOW_WARNING("GetLogicalCPUCount returned an invalid value: %u",
+			iEnt->GetSystem()->GetLogicalCPUCount());
+		return false;
+	}
+	if (iEnt->GetSystem()->IsQuitting() ||
+		iEnt->GetSystem()->IsRelaunch())
+	{
+		SHOW_WARNING("IsQuitting/IsRelaunch returned invalid values: %u/%u",
+			iEnt->GetSystem()->IsQuitting(), iEnt->GetSystem()->IsRelaunch());
+		return false;
+	}
+	if (iEnt->GetSystem()->GetHWND() > (PVOID)((ULONG_PTR)0xFFFFFFFF))
+	{
+		SHOW_WARNING("GetHWND returned an invalid window handle: %p",
+			iEnt->GetSystem()->GetHWND());
+		return false;
 	}
 	if ((PVOID)pEntSys != iEnt->GetSystem()->GetIEntitySystem()) {
 		char errbuf[128];
@@ -282,7 +311,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 				"TestDLL Notification",
 				MB_OK | MB_ICONINFORMATION);
 			return;
-		}
+}
 		void *bla = malloc(10);
 		free(bla);
 #endif
@@ -374,4 +403,4 @@ void APIENTRY LibEntry(PVOID user_ptr)
 	}
 
 	gdi_radar_process_window_events_nonblocking(ctx);
-	}
+}
