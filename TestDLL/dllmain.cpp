@@ -188,6 +188,36 @@ static IEntitySystem * iEnt = NULL;
         MessageBoxA(NULL, errbuf, "Hunted WARNING",	MB_OK | MB_ICONINFORMATION); \
 	} while (0);
 
+static bool ConfigureAndInitGDI(void)
+{
+	SetWindowTextA(GetConsoleWindow(), "Hunted");
+
+	gdi_radar_config cfg = {};
+	cfg.className = L"HR";
+	cfg.windowName = L"HRWND";
+	cfg.minimumUpdateTime = 0.25f;
+	cfg.maximumRedrawFails = 5;
+	cfg.reservedEntities = 16;
+
+	printf("Configure.\n");
+	ctx = gdi_radar_configure(&cfg, gdi_radar_get_fake_hinstance());
+	if (!ctx)
+	{
+		printf("Configure failed.\n");
+		return false;
+	}
+
+	gdi_radar_set_game_dimensions(ctx, 1020.0f, 1020.0f);
+
+	if (!gdi_radar_init(ctx))
+	{
+		printf("Init failed.\n");
+		return false;
+	}
+
+	return true;
+}
+
 static bool InitAndCheckPtr(PVOID user_ptr)
 {
 	char reserved_stack_space[256];
@@ -311,7 +341,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 				"TestDLL Notification",
 				MB_OK | MB_ICONINFORMATION);
 			return;
-}
+		}
 		void *bla = malloc(10);
 		free(bla);
 #endif
@@ -328,7 +358,6 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		FILE * conout = NULL;
 		freopen_s(&conout, "CONOUT$", "w", stdout);
 
-		SetWindowTextA(GetConsoleWindow(), "Hunted");
 		printf("Welcome.\n");
 		printf("[used memory: %u][cpu flags: %u][user name: %s][cpu count: %d]\n",
 			iEnt->GetSystem()->GetUsedMemory(),
@@ -336,26 +365,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			iEnt->GetSystem()->GetUserName(),
 			iEnt->GetSystem()->GetLogicalCPUCount());
 
-		gdi_radar_config cfg = {};
-		cfg.className = L"HR";
-		cfg.windowName = L"HRWND";
-		cfg.minimumUpdateTime = 0.25f;
-		cfg.maximumRedrawFails = 5;
-		cfg.reservedEntities = 16;
-
-		printf("Configure.\n");
-		ctx = gdi_radar_configure(&cfg, gdi_radar_get_fake_hinstance());
-		if (!ctx)
-		{
-			printf("Configure failed.\n");
-			return;
-		}
-
-		gdi_radar_set_game_dimensions(ctx, 1020.0f, 1020.0f);
-
-		if (!gdi_radar_init(ctx))
-		{
-			printf("Init failed.\n");
+		if (!ConfigureAndInitGDI()) {
 			return;
 		}
 	}
@@ -385,20 +395,31 @@ void APIENTRY LibEntry(PVOID user_ptr)
 			continue;
 		}
 
+		enum entity_color entCol = entity_color::EC_RED;
+		if (pEnt->GetFlags() & ENTITY_FLAG_LOCAL_PLAYER) {
+			entCol = entity_color::EC_BLUE;
+		}
+		else if ((pEnt->GetFlags() & ENTITY_ENEMY_CHECK) == 0) {
+			entCol = entity_color::EC_BLACK;
+		}
+
 		Vec3 entPos = pEnt->GetPos();
 		entPos.x -= 500.0f;
 		entPos.y -= 500.0f;
 		entPos.y = 1020.0f - entPos.y;
-		entity radar_entity{ (int)entPos.x, (int)entPos.y, 100.0f, entity_color::EC_RED, "test" };
+		entity radar_entity{ (int)entPos.x, (int)entPos.y, 100.0f, entCol, "test" };
 		gdi_radar_add_entity(ctx, &radar_entity);
 
 		i++;
 	}
 
-	//printf("__%d__\n", iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIActorSystem()->GetActorCount());
-	if (!gdi_radar_redraw_if_necessary(ctx)) {
+	static UINT64 redraw_retry = 0;
+	if (!gdi_radar_redraw_if_necessary(ctx) &&
+		((++redraw_retry) % 250 == 0))
+	{
 		printf("Reint (redraw failed).\n");
 		gdi_radar_close_and_cleanup(&ctx);
+		ConfigureAndInitGDI();
 		return;
 	}
 
