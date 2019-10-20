@@ -198,6 +198,7 @@ static bool ConfigureAndInitGDI(void)
 	cfg.minimumUpdateTime = 0.25f;
 	cfg.maximumRedrawFails = 5;
 	cfg.reservedEntities = 16;
+	cfg.drawAngles = true;
 
 	printf("Configure.\n");
 	ctx = gdi_radar_configure(&cfg, gdi_radar_get_fake_hinstance());
@@ -374,6 +375,20 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		return;
 	}
 
+#if 1
+	static UINT64 exec_counter = 0;
+	if ((++exec_counter) % 500 == 0) {
+		printf("---%d---%d---%s---%.2f %.2f %.2f---\n",
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientActorId(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntityId(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetLevelName(),
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().x,
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().y,
+			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().z
+		);
+	}
+#endif
+
 	gdi_radar_clear_entities(ctx);
 
 	SIZE_T i = 1;
@@ -407,7 +422,10 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		entPos.x -= 500.0f;
 		entPos.y -= 500.0f;
 		entPos.y = 1020.0f - entPos.y;
-		entity radar_entity{ (int)entPos.x, (int)entPos.y, 100.0f, entCol, "test" };
+		float entAngle = pEnt->GetWorldAngles().z;
+		entAngle *= -1.0f;
+		entAngle -= 1.5707963267948966192313216916398f; /* pi/2 == 90deg */
+		entity radar_entity{ (int)entPos.x, (int)entPos.y, entAngle, 100.0f, entCol, "test" };
 		gdi_radar_add_entity(ctx, &radar_entity);
 
 		i++;
