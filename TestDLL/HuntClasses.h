@@ -151,6 +151,24 @@ public:
 };
 typedef Vec3_tpl<float> Vec3;
 
+template<typename F> struct Ang3_tpl
+	: INumberVector<F, 3, Ang3_tpl<F>>
+{
+public:
+	F x, y, z;
+	Ang3_tpl(F vx, F vy, F vz) : x(vx), y(vy), z(vz) {}
+};
+typedef Ang3_tpl<float> Ang3;
+
+template<typename F> struct Quat_tpl
+	: INumberVector<F, 4, Quat_tpl<F>>
+{
+public:
+	Vec3_tpl<F> v;
+	F           w;
+};
+typedef Quat_tpl<float> Quat;
+
 class Matrix34 {
 public:
 	float m00;
@@ -256,8 +274,8 @@ public:
 	virtual const Vec3& GetScale() const = 0;
 	virtual void fn_21(void) = 0;
 	virtual Vec3 GetWorldPos() const = 0;
-	virtual void fn_22(void) const = 0;
-	virtual void fn_23(void) const = 0;
+	virtual Ang3 GetWorldAngles() const = 0;
+	virtual Quat GetWorldRotation() const = 0;
 	virtual Vec3 GetWorldScale() const = 0;
 };
 
