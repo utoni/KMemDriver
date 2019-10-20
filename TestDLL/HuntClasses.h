@@ -12,6 +12,7 @@ struct ISystem;
 #define ENTITY_FLAG_TRIGGER_AREAS     0x2000
 #define ENTITY_FLAG_SEND_RENDER_EVENT 0x20000
 #define ENTITY_FLAG_CASTSHADOW        0x1
+#define ENTITY_ENEMY_CHECK            (ENTITY_FLAG_SEND_RENDER_EVENT | ENTITY_FLAG_CASTSHADOW)
 
 template<class _I> class _smart_ptr
 {
@@ -719,13 +720,13 @@ struct IGameFramework
 	virtual void fn_60(void) = 0;
 	virtual void fn_61(void) = 0;
 	virtual void fn_62(void) = 0;
-	virtual PVOID GetClientActor() const = 0;
+	virtual void fn_62_1(void) = 0;
+	virtual void fn_63(void) = 0;
+	virtual IActor* GetClientActor() const = 0;
 	virtual int GetClientActorId() const = 0;
-	virtual PVOID GetClientEntity() const = 0;
+	virtual IEntity* GetClientEntity() const = 0;
 	virtual int GetClientEntityId() const = 0;
 	virtual PVOID GetClientChannel() const = 0;
-	virtual int GetServerTime() = 0;
-	virtual void fn_63(void) = 0;
 	virtual void fn_64(void) = 0;
 	virtual void fn_65(void) = 0;
 	virtual void fn_66(void) = 0;
@@ -744,17 +745,17 @@ struct IGameFramework
 	virtual void fn_79(void) = 0;
 	virtual void fn_80(void) = 0;
 	virtual void fn_81(void) = 0;
-	virtual bool IsEditing() = 0;
-	virtual bool IsInLevelLoad() = 0;
-	virtual bool IsLoadingSaveGame() = 0;
-	virtual bool IsInTimeDemo() = 0;
-	virtual bool IsTimeDemoRecording() = 0;
+	virtual UINT8 IsEditing() = 0;
+	virtual UINT8 IsInLevelLoad() = 0;
+	virtual UINT8 IsLoadingSaveGame() = 0;
+	virtual UINT8 IsInTimeDemo() = 0;
+	virtual UINT8 IsTimeDemoRecording() = 0;
 	virtual void fn_82(void) = 0;
 	virtual void fn_83(void) = 0;
-	virtual bool CanSave() = 0;
-	virtual bool CanLoad() = 0;
+	virtual UINT8 CanSave() = 0;
+	virtual UINT8 CanLoad() = 0;
 	virtual void fn_84(void) = 0;
-	virtual bool CanCheat() = 0;
+	virtual UINT8 CanCheat() = 0;
 	virtual const char* GetLevelName() = 0;
 	virtual void GetAbsLevelPath(char* pPathBuffer, UINT32 pathBufferSize) = 0;
 	virtual PVOID GetIPersistantDebug() = 0;
