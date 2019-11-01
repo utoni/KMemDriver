@@ -238,7 +238,6 @@ static bool InitAndCheckPtr(PVOID user_ptr)
 			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
-#define PENTITYSYSTEM_ISYSTEM_OFFSET 104
 	if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
 		char errbuf[128];
 		snprintf(errbuf, sizeof errbuf,
@@ -375,17 +374,9 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		return;
 	}
 
-#if 1
+#if 0
 	static UINT64 exec_counter = 0;
 	if ((++exec_counter) % 500 == 0) {
-		printf("---%d---%d---%s---%.2f %.2f %.2f---\n",
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientActorId(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntityId(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetLevelName(),
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().x,
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().y,
-			iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetClientEntity()->GetWorldAngles().z
-		);
 	}
 #endif
 

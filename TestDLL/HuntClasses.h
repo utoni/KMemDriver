@@ -4,6 +4,7 @@
 #include <stdarg.h>
 
 #include <string>
+#include <map>
 
 struct ISystem;
 
@@ -13,6 +14,8 @@ struct ISystem;
 #define ENTITY_FLAG_SEND_RENDER_EVENT 0x20000
 #define ENTITY_FLAG_CASTSHADOW        0x1
 #define ENTITY_ENEMY_CHECK            (ENTITY_FLAG_SEND_RENDER_EVENT | ENTITY_FLAG_CASTSHADOW)
+
+#define PENTITYSYSTEM_ISYSTEM_OFFSET 104
 
 template<class _I> class _smart_ptr
 {
@@ -644,6 +647,8 @@ struct IActorIterator
 	virtual void    Release() = 0;
 };
 typedef _smart_ptr<IActorIterator> IActorIteratorPtr;
+
+typedef std::map<int, IActor*> TActorMap;
 
 struct IActorSystem
 {
