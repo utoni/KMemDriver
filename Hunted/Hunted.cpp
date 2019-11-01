@@ -252,7 +252,7 @@ int wmain(int argc, wchar_t **argv)
 							*(UINT64 *)((BYTE *)cc + 31) = g_pEnvSys;
 							*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x275 */
-							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x708F5;
+							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70875;
 							*(UINT64 *)((BYTE *)cc + 81) = jumpBackAddr;
 							printBuf(cc, sizeof cc, 32);
 							KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);
@@ -261,7 +261,7 @@ int wmain(int argc, wchar_t **argv)
 							*(UINT64 *)((BYTE *)dd + 2) = (UINT64)targetAddr;
 							printBuf(dd, sizeof dd, 32);
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x9 */
-							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70689), &dd[0]);
+							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70609), &dd[0]);
 #if 0
 							Sleep(1000);
 							if (!ki.VUnlink(targetPID, targetAddr)) {
