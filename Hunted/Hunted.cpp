@@ -178,10 +178,8 @@ int wmain(int argc, wchar_t **argv)
 								<< ", EntryPoint: " << WHEXOUT << dll.GetEntryPoint() << std::endl;
 
 							PVOID targetAddr = (PVOID)(dll.GetBaseAddress());
-							std::wcout << "ADDRESS -> " << WHEXOUT << targetAddr << std::endl;
-
-							UINT64 g_pEnvSys = 0;
-							g_pEnvSys = (UINT64)md.DllBase + 0x28E3F8;
+							UINT64 g_pEntSys = 0;
+							g_pEntSys = (UINT64)md.DllBase + 0x28E3F8;
 
 							for (MODULE_DATA& md : modules) {
 								if (!strncmp(md.BaseDllName, "CryAction.dll",
@@ -197,22 +195,26 @@ int wmain(int argc, wchar_t **argv)
 										std::wcout << L"AdditionalDLLDir: "
 											<< std::wstring(dir.begin(), dir.end()) << std::endl;
 									}
-
+#if 0
 									PatternScanner pscan(sresolv, &map_loadlib, &llua);
 									std::vector<SIZE_T> foundAddresses;
 									pscan.Scan(md, "48 8B 48 20 48 8B 01 FF 90 20 01 00 00", foundAddresses);
-									for (auto& addr : foundAddresses) {
-										std::wcout << "Addr: " << addr << ", Content: ";
-										BYTE content[32];
-										KMemoryBuf::Rpm<sizeof content>(targetPID, (PVOID)addr, &content[0]);
-										printBuf(content, sizeof content, 32);
-									}
 
+									UINT64 g_pEnvSysSigged = NULL;
+									for (auto& addr : foundAddresses) {
+										KMemoryBuf::Rpm<sizeof g_pEnvSysSigged>(targetPID, (PVOID)(addr - 0x8), (BYTE*)&g_pEnvSysSigged);
+										g_pEnvSysSigged >>= 32;
+										std::wcout << "g_pEnvSys via SigScan: " << addr + g_pEnvSysSigged << std::endl;
+										//g_pEnvSys = addr + g_pEnvSysSigged;
+									}
+#endif
 									// pEnv: 48 8B 48 20 48 8B 01 FF 90 20 01 00 00
 									//globalEnvAddr = (UINT64)md.DllBase + 0x70E848;
+									//static CCryAction* = 48 8B 03 BA 01 00 00 00 48 89 6C 24 30 -0x11
 									break;
 								}
 							}
+							std::wcout << L"g_pEntSys: " << g_pEntSys << std::endl;
 
 							BYTE cc[] = { /* push rax; push rbx; push rcx; push rdx; push rsi;
 											 push rdi; push rsp; push rbp; push r8; push r9;
@@ -249,7 +251,7 @@ int wmain(int argc, wchar_t **argv)
 										  0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 										  /* jmp rax */
 										  0xFF, 0xE0 };
-							*(UINT64 *)((BYTE *)cc + 31) = g_pEnvSys;
+							*(UINT64 *)((BYTE *)cc + 31) = g_pEntSys;
 							*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x275 */
 							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70875;
@@ -266,20 +268,20 @@ int wmain(int argc, wchar_t **argv)
 							Sleep(1000);
 							if (!ki.VUnlink(targetPID, targetAddr)) {
 								std::wcout << L"VUnlink failed" << std::endl;
-							}
-#endif
 						}
+#endif
 					}
 				}
 			}
 		}
+	}
 		catch (std::runtime_error& err) {
 			std::wcout << err.what() << std::endl;
 		}
-	} while (running);
+} while (running);
 
-	std::wcout << L"Driver shutdown .." << std::endl;
-	ki.Exit();
+std::wcout << L"Driver shutdown .." << std::endl;
+ki.Exit();
 
-	return 0;
+return 0;
 }
