@@ -276,7 +276,7 @@ int wmain(int argc, wchar_t **argv)
 							*(UINT64 *)((BYTE *)cc + 81) = jumpBackAddr;
 							*(UINT64 *)((BYTE *)cc + 91) = g_pEntSys;
 							*(UINT64 *)((BYTE *)cc + 99) = g_pEnvSysSigged;
-							*(UINT64 *)((BYTE *)cc + 108) = g_pCCryActionSigged;
+							*(UINT64 *)((BYTE *)cc + 107) = g_pCCryActionSigged;
 
 							printBuf(cc, sizeof cc, 32);
 							KMemoryBuf::Wpm<sizeof cc>(targetPID, (PVOID)targetAddr, &cc[0]);

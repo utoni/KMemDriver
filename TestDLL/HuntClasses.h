@@ -963,5 +963,5 @@ static inline bool WorldToScreen(SSystemGlobalEnvironment* globalEnv, Vec3 vEntP
 struct HuntCtx {
 	IEntitySystem ** ppEntSys;
 	SSystemGlobalEnvironment ** ppGlobalEnv;
-	IActorSystem ** ppCCryAction;
+	IGameFramework ** ppCCryAction;
 };

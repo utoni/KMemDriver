@@ -272,6 +272,11 @@ static bool InitAndCheckPtr(struct HuntCtx * HuntCtx)
 			(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
 		return false;
 	}
+	if ((*HuntCtx->ppCCryAction)->GetIActorSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIActorSystem()) {
+		SHOW_WARNING("CCryAction->GetIActorSystem() signature not equals GameFramework->GetIActorSystem() instance: ppCCryAction[%p] != pGameFramework[%p]\n",
+			(*HuntCtx->ppCCryAction)->GetIActorSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetIActorSystem());
+		return false;
+	}
 	if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem()) {
 		SHOW_WARNING("ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
 			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem());
@@ -354,7 +359,7 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 #if 0
 		if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
 			continue;
-}
+		}
 #endif
 		const char *name = pEnt->GetName();
 		if (strlen(name) < 4) {
@@ -383,7 +388,7 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		gdi_radar_add_entity(ctx, &radar_entity);
 
 		i++;
-	}
+}
 
 	static UINT64 redraw_retry = 0;
 	if (!gdi_radar_redraw_if_necessary(ctx) &&
