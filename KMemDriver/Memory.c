@@ -290,7 +290,7 @@ NTSTATUS AllocMemoryToProcess(IN PEPROCESS pep, IN OUT PVOID *baseAddr, IN OUT S
 		return STATUS_UNSUCCESSFUL;
 	}
 	KeStackAttachProcess((PRKPROCESS)pep, apc);
-	status = ZwAllocateVirtualMemory(ZwCurrentProcess(), baseAddr, 0, outSize, MEM_COMMIT, protect);
+	status = ZwAllocateVirtualMemory(ZwCurrentProcess(), baseAddr, 0, outSize, MEM_COMMIT /* | MEM_RESERVE */, protect);
 	if (!NT_SUCCESS(status)) {
 		KDBG("ZwAllocateVirtualMemory failed with 0x%X\n", status);
 	}
