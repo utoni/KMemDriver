@@ -195,7 +195,7 @@ static bool ConfigureAndInitGDI(void)
 	gdi_radar_config cfg = {};
 	cfg.className = L"HR";
 	cfg.windowName = L"HRWND";
-	cfg.minimumUpdateTime = 0.25f;
+	cfg.minimumUpdateTime = 0.20f;
 	cfg.maximumRedrawFails = 5;
 	cfg.reservedEntities = 16;
 	cfg.drawAngles = true;
@@ -344,7 +344,7 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 				"TestDLL Notification",
 				MB_OK | MB_ICONINFORMATION);
 			return;
-}
+		}
 		void *bla = malloc(10);
 		free(bla);
 #endif
@@ -376,12 +376,9 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 	if (!iEnt || iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->IsInLevelLoad()) {
 		return;
 	}
-
-#if 0
-	static UINT64 exec_counter = 0;
-	if ((++exec_counter) % 500 == 0) {
+	if (!gdi_radar_check_if_redraw_necessary(ctx)) {
+		return;
 	}
-#endif
 
 	gdi_radar_clear_entities(ctx);
 
@@ -436,4 +433,4 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 	}
 
 	gdi_radar_process_window_events_nonblocking(ctx);
-	}
+}
