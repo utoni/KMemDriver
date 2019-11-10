@@ -228,25 +228,13 @@ static bool InitAndCheckPtr(struct HuntCtx * HuntCtx)
 
 	ZeroMemory(&reserved_stack_space[0], sizeof reserved_stack_space);
 	if (iEnt->GetNumEntities() > 65535) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: Invalid number of Entities: VALUE[%d] > 65535\n",
+		SHOW_WARNING("Invalid number of Entities : VALUE[%u] > 65535\n",
 			iEnt->GetNumEntities());
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 	if ((PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)) != iEnt->GetSystem()) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: ISystem interface instance not equal: MEMBER[%p] != GETSYSTEM[%p]\n",
+		SHOW_WARNING("ISystem interface instance not equal : MEMBER[%p] != GETSYSTEM[%p]\n",
 			(PVOID)(*(UINT64*)(pEntSys + PENTITYSYSTEM_ISYSTEM_OFFSET)), iEnt->GetSystem());
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 	if (iEnt->GetSystem()->GetLogicalCPUCount() < 1 ||
@@ -270,58 +258,33 @@ static bool InitAndCheckPtr(struct HuntCtx * HuntCtx)
 		return false;
 	}
 	if ((PVOID)pEntSys != iEnt->GetSystem()->GetIEntitySystem()) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != GETENTITYSYSTEM[%p]\n",
+		SHOW_WARNING("IEntitySystem interface instance not equal: GLOBAL[%p] != GETENTITYSYSTEM[%p]\n",
 			(PVOID)pEntSys, iEnt->GetSystem()->GetIEntitySystem());
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 	if ((PVOID)pEntSys != iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: IEntitySystem interface instance not equal: GLOBAL[%p] != pEntitySystem[%p]\n",
+		SHOW_WARNING("IEntitySystem interface instance not equal: GLOBAL[%p] != pEntitySystem[%p]\n",
 			(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
+		return false;
+	}
+	if (*HuntCtx->ppGlobalEnv != iEnt->GetSystem()->GetGlobalEnvironment()) {
+		SHOW_WARNING("GlobalEnvironment signature not equals GetGlobalEnvironment() instance: ppGlobalEnv[%p] != GetGlobalEnvironment[%p]\n",
+			(PVOID)pEntSys, iEnt->GetSystem()->GetGlobalEnvironment()->pEntitySystem);
 		return false;
 	}
 	if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem()) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
+		SHOW_WARNING("ISystem interface instance not equal: IEntitySystem[%p] != pGameFramework[%p]\n",
 			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pGameFramework->GetISystem());
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 	if (iEnt->GetSystem() != iEnt->GetSystem()->GetGlobalEnvironment()->pSystem) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+		SHOW_WARNING("ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
 			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 	if (iEnt->GetSystem()->GetGlobalEnvironment()->pRenderer != iEnt->GetSystem()->GetIRenderer()) {
-		char errbuf[128];
-		snprintf(errbuf, sizeof errbuf,
-			"WARNING: ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
+		SHOW_WARNING("ISystem interface instance not equal: IEntitySystem[%p] != pSystem[%p]\n",
 			iEnt->GetSystem(), iEnt->GetSystem()->GetGlobalEnvironment()->pSystem);
-		MessageBoxA(NULL,
-			errbuf,
-			"Hunted WARNING",
-			MB_OK | MB_ICONINFORMATION);
 		return false;
 	}
 
@@ -391,7 +354,7 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 #if 0
 		if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
 			continue;
-		}
+}
 #endif
 		const char *name = pEnt->GetName();
 		if (strlen(name) < 4) {
