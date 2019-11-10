@@ -219,12 +219,12 @@ static bool ConfigureAndInitGDI(void)
 	return true;
 }
 
-static bool InitAndCheckPtr(PVOID user_ptr)
+static bool InitAndCheckPtr(struct HuntCtx * HuntCtx)
 {
 	char reserved_stack_space[256];
 
-	pEntSys = *(UINT64*)user_ptr;
-	iEnt = *(IEntitySystem **)user_ptr;
+	pEntSys = *(UINT64*)(HuntCtx->ppEntSys);
+	iEnt = *HuntCtx->ppEntSys;
 
 	ZeroMemory(&reserved_stack_space[0], sizeof reserved_stack_space);
 	if (iEnt->GetNumEntities() > 65535) {
@@ -328,9 +328,12 @@ static bool InitAndCheckPtr(PVOID user_ptr)
 	return true;
 }
 
-void APIENTRY LibEntry(PVOID user_ptr)
+void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 {
 	static bool firstEntry = true;
+
+	if (!HuntCtx || !HuntCtx->ppEntSys || !HuntCtx->ppGlobalEnv || !HuntCtx->ppCCryAction)
+		return;
 
 	if (firstEntry) {
 		firstEntry = false;
@@ -341,7 +344,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 				"TestDLL Notification",
 				MB_OK | MB_ICONINFORMATION);
 			return;
-		}
+}
 		void *bla = malloc(10);
 		free(bla);
 #endif
@@ -349,7 +352,7 @@ void APIENTRY LibEntry(PVOID user_ptr)
 		HINSTANCE addr = GetModuleHandle(NULL);
 		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
 
-		if (!InitAndCheckPtr(user_ptr))
+		if (!InitAndCheckPtr(HuntCtx))
 		{
 			return;
 		}
@@ -433,4 +436,4 @@ void APIENTRY LibEntry(PVOID user_ptr)
 	}
 
 	gdi_radar_process_window_events_nonblocking(ctx);
-}
+	}

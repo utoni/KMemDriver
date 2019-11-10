@@ -958,3 +958,10 @@ static inline bool WorldToScreen(SSystemGlobalEnvironment* globalEnv, Vec3 vEntP
 
 	return ((vOut.z < 1.0f) && (vOut.x > 0) && (vOut.x < (float)Renderer->GetWidth()) && (vOut.y > 0) && (vOut.y < (float)Renderer->GetHeight()));
 }
+
+
+struct HuntCtx {
+	IEntitySystem ** ppEntSys;
+	SSystemGlobalEnvironment ** ppGlobalEnv;
+	IActorSystem ** ppCCryAction;
+};
