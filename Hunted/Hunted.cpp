@@ -203,7 +203,7 @@ int wmain(int argc, wchar_t **argv)
 										pscan.Scan(md, "48 8B 48 20 48 8B 01 FF 90 20 01 00 00", foundAddresses);
 
 										for (auto& addr : foundAddresses) {
-											KMemoryBuf::Rpm<sizeof g_pEnvSysSigged>(targetPID, (PVOID)(addr - 0x8), (BYTE*)&g_pEnvSysSigged);
+											g_pEnvSysSigged = KMemory::Rpm<UINT64>(targetPID, (PVOID)(addr - 0x8));
 											g_pEnvSysSigged >>= 32;
 											g_pEnvSysSigged += addr;
 											std::wcout << "g_pEnvSys via SigScan: " << g_pEnvSysSigged << std::endl;
@@ -215,7 +215,7 @@ int wmain(int argc, wchar_t **argv)
 										pscan.Scan(md, "48 89 6C 24 38 48 8D 2D ?? ?? ?? ?? 48 8B 11", foundAddresses);
 
 										for (auto& addr : foundAddresses) {
-											KMemoryBuf::Rpm<sizeof g_pCCryActionSigged>(targetPID, (PVOID)(addr - 0x8), (BYTE*)&g_pCCryActionSigged);
+											g_pCCryActionSigged = KMemory::Rpm<UINT64>(targetPID, (PVOID)(addr - 0x8));
 											g_pCCryActionSigged >>= 32;
 											g_pCCryActionSigged += addr;
 											std::wcout << "g_pCCryAction via SigScan: " << g_pCCryActionSigged << std::endl;
