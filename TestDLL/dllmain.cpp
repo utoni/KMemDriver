@@ -330,7 +330,8 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		freopen_s(&conout, "CONOUT$", "w", stdout);
 
 		printf("Welcome.\n");
-		printf("[used memory: %u][cpu flags: %u][user name: %s][cpu count: %d]\n",
+		printf("[thread id: %d][used memory: %u][cpu flags: %u][user name: %s][cpu count: %d]\n",
+			GetCurrentThreadId(),
 			iEnt->GetSystem()->GetUsedMemory(),
 			iEnt->GetSystem()->GetCPUFlags(),
 			iEnt->GetSystem()->GetUserName(),
