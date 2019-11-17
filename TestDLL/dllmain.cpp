@@ -389,7 +389,7 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		gdi_radar_add_entity(ctx, &radar_entity);
 
 		i++;
-}
+	}
 
 	static UINT64 redraw_retry = 0;
 	if (!gdi_radar_redraw_if_necessary(ctx) &&
