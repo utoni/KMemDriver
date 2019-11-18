@@ -140,17 +140,6 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 
 	if (firstEntry) {
 		firstEntry = false;
-#if 0
-		if (!resolve_all_symbols()) {
-			MessageBoxA(NULL,
-				"COULD NOT RESOLVE ALL DYNAMIC DLL SYMBOLS !!!",
-				"TestDLL Notification",
-				MB_OK | MB_ICONINFORMATION);
-			return;
-		}
-		void *bla = malloc(10);
-		free(bla);
-#endif
 
 		HINSTANCE addr = GetModuleHandle(NULL);
 		_CRT_INIT(addr, DLL_PROCESS_ATTACH, NULL);
@@ -192,11 +181,6 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		if (!pEnt->IsInitialized() || pEnt->IsGarbage()) {
 			continue;
 		}
-#if 0
-		if (pEnt->GetFlags() != (ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_SEND_RENDER_EVENT)) {
-			continue;
-		}
-#endif
 		const char *name = pEnt->GetName();
 		if (strlen(name) < 4) {
 			continue;
