@@ -154,6 +154,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\include\DLLHelper.h" />
+    <ClInclude Include="..\include\DX11Manager.h" />
     <ClInclude Include="..\include\KMemDriver.h" />
     <ClInclude Include="..\include\KInterface.h" />
     <ClInclude Include="..\include\PatternScanner.h" />
@@ -163,6 +164,7 @@
   <ItemGroup>
     <ClCompile Include="DLLHelper.cpp" />
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="DX11Manager.cpp" />
     <ClCompile Include="MemDriverLib.cpp" />
     <ClCompile Include="PatternScanner.cpp" />
     <ClCompile Include="stdafx.cpp">

@@ -21,6 +21,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestDLL", "TestDLL\TestDLL.vcxproj", "{E27E6F2C-154E-46AF-BED4-78D50C751565}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTest", "IntegrationTest\IntegrationTest.vcxproj", "{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB} = {B6790A97-6995-46B6-AD73-AC5BC4AC76DB}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
