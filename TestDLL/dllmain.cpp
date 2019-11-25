@@ -195,8 +195,8 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		}
 
 		Vec3 entPos = pEnt->GetPos();
-		entPos.x -= 500.0f;
-		entPos.y -= 500.0f;
+		entPos.x -= 520.0f;
+		entPos.y -= 520.0f;
 		entPos.y = 1020.0f - entPos.y;
 		float entAngle = pEnt->GetWorldAngles().z;
 		entAngle *= -1.0f;

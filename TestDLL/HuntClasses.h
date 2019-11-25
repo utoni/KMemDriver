@@ -10,10 +10,6 @@ struct ISystem;
 
 
 #define ENTITY_FLAG_LOCAL_PLAYER      0x8000000
-#define ENTITY_FLAG_TRIGGER_AREAS     0x2000
-#define ENTITY_FLAG_SEND_RENDER_EVENT 0x20000
-#define ENTITY_FLAG_CASTSHADOW        0x1
-#define ENTITY_ENEMY_CHECK            (ENTITY_FLAG_SEND_RENDER_EVENT | ENTITY_FLAG_CASTSHADOW)
 
 #define PENTITYSYSTEM_ISYSTEM_OFFSET 104
 
@@ -280,6 +276,8 @@ public:
 	virtual Ang3 GetWorldAngles() const = 0;
 	virtual Quat GetWorldRotation() const = 0;
 	virtual Vec3 GetWorldScale() const = 0;
+	//virtual IScriptTable* GetScriptTable() const final;
+	//GetScriptTable -> VirtualFuncIndex 64
 };
 
 struct IEntityIt
