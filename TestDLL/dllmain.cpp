@@ -56,12 +56,9 @@ static bool ConfigureAndInitGDI(void)
 
 static bool InitAndCheckPtr(struct HuntCtx * HuntCtx)
 {
-	char reserved_stack_space[256];
-
 	pEntSys = *(UINT64*)(HuntCtx->ppEntSys);
 	iEnt = *HuntCtx->ppEntSys;
 
-	ZeroMemory(&reserved_stack_space[0], sizeof reserved_stack_space);
 	if (iEnt->GetNumEntities() > 65535) {
 		SHOW_WARNING("Invalid number of Entities : VALUE[%u] > 65535\n",
 			iEnt->GetNumEntities());
@@ -199,12 +196,12 @@ void APIENTRY LibEntry(struct HuntCtx * HuntCtx)
 		entPos.y -= 520.0f;
 		entPos.y = 1020.0f - entPos.y;
 		float entAngle = pEnt->GetWorldAngles().z;
-		entAngle *= -1.0f;
+		entAngle *= -1.0f; /* inverse */
 		entAngle -= 1.5707963267948966192313216916398f; /* pi/2 == 90deg */
-		entity radar_entity{
+		struct entity radar_entity{
 			(int)entPos.x, (int)entPos.y, entAngle,
 			(entCol == entity_color::EC_BLUE ? 60 : 0),
-			100.0f, entCol, "test"
+			entCol, "test"
 		};
 		gdi_radar_add_entity(ctx, &radar_entity);
 
