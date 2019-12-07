@@ -16,6 +16,8 @@
 
 int main()
 {
+	ULONG_PTR this_pid = GetCurrentProcessId();
+
 	KM_ASSERT_EQUAL(true, true, "Integration Test Init");
 
 	try {
@@ -23,8 +25,22 @@ int main()
 		KM_ASSERT_EQUAL(true, ki.Init(), "Kernel Interface Init");
 		KM_ASSERT_EQUAL(true, ki.Handshake(), "Kernel Interface Handshake");
 		KM_ASSERT_EQUAL(SRR_TIMEOUT, ki.RecvWait(), "Kernel Interface Receive Wait");
-		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG");
+		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #1");
+		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #2");
+		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #3");
 
+		{
+			PVOID addr = (PVOID)0x60000000;
+			SIZE_T size = 0x100;
+			KM_ASSERT_EQUAL(true,
+				ki.VAlloc((HANDLE)this_pid, &addr, &size, PAGE_READWRITE), "Kernel Interface VirtualAlloc");
+			//KM_ASSERT_EQUAL(false,
+			//	ki.VAlloc((HANDLE)this_pid, &addr, &size, PAGE_READWRITE), "Kernel Interface VirtualAlloc again should fail");
+			//KM_ASSERT_EQUAL(true,
+			//	ki.VFree((HANDLE)this_pid, addr, size), "Kernel Interface VirtualFree");
+		}
+
+		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #4");
 		KM_ASSERT_EQUAL(true, ki.Exit(), "Kernel Interface Driver Shutdown");
 	}
 	catch (std::runtime_error& err) {
@@ -33,5 +49,6 @@ int main()
 
 	std::wcout << "Done." << std::endl;
 error:
-	Sleep(3000);
+	std::wcout << std::endl << "[PRESS RETURN KEY TO EXIT]" << std::endl;
+	getchar();
 }
