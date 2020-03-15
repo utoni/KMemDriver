@@ -13,7 +13,7 @@
 #define WHEXOUT std::setfill(L'0') << std::setw(16) << std::hex
 
 static BOOL running = false;
-static const wchar_t *wName = L"HUNT";
+static const wchar_t wName[] = L"HUNT";
 
 
 static bool consoleHandler(int signal) {
@@ -181,7 +181,27 @@ int wmain(int argc, wchar_t **argv)
 							UINT64 g_pEnvSysSigged = NULL;
 							UINT64 g_pCCryActionSigged = NULL;
 							UINT64 g_pEntSys = 0;
-							g_pEntSys = (UINT64)md.DllBase + 0x28E3F8;
+
+							{
+								struct loadlib_user_data llua;
+								char * cryDllDir = new char[sizeof md.FullDllPath];
+								std::memcpy(cryDllDir, md.FullDllPath, sizeof md.FullDllPath);
+								PathRemoveFileSpecA(cryDllDir);
+								llua.additionalDllSearchDirectories.push_back(std::string(cryDllDir));
+								delete cryDllDir;
+
+								PatternScanner pscan(sresolv, &map_loadlib, &llua);
+								std::vector<SIZE_T> foundAddresses;
+								/* ?g_pIEntitySystem -> EXPORT TABLE [Offset: -0x32 == g_pEntSys] */
+								pscan.Scan(md, "3F 67 5F 70 49 45 6E 74 69 74 79 53 79 73 74 65 6D", foundAddresses);
+
+								for (auto& addr : foundAddresses) {
+									g_pEntSys = KMemory::Rpm<UINT64>(targetPID, (PVOID)(addr - 0x8));
+									g_pEntSys >>= 32;
+									g_pEntSys += addr;
+									std::wcout << "g_pEntSys via SigScan: " << g_pEntSys << std::endl;
+								}
+							}
 
 							for (MODULE_DATA& md : modules) {
 								if (!strncmp(md.BaseDllName, "CryAction.dll",
@@ -193,6 +213,7 @@ int wmain(int argc, wchar_t **argv)
 									PathRemoveFileSpecA(cryDllDir);
 									llua.additionalDllSearchDirectories.push_back(std::string(cryDllDir));
 									delete cryDllDir;
+
 									for (auto& dir : llua.additionalDllSearchDirectories) {
 										std::wcout << L"AdditionalDLLDir: "
 											<< std::wstring(dir.begin(), dir.end()) << std::endl;
@@ -225,7 +246,6 @@ int wmain(int argc, wchar_t **argv)
 									break;
 								}
 							}
-							std::wcout << L"g_pEntSys: " << g_pEntSys << std::endl;
 
 							BYTE cc[] = { /* push rax; push rbx; push rcx; push rdx; push rsi;
 											 push rdi; push rsp; push rbp; push r8; push r9;
@@ -288,12 +308,6 @@ int wmain(int argc, wchar_t **argv)
 
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x9 */
 							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70609), &dd[0]);
-#if 0
-							Sleep(1000);
-							if (!ki.VUnlink(targetPID, targetAddr)) {
-								std::wcout << L"VUnlink failed" << std::endl;
-							}
-#endif
 						}
 					}
 				}
