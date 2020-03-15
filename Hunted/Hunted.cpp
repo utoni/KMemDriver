@@ -292,7 +292,7 @@ int wmain(int argc, wchar_t **argv)
 							*(UINT64 *)((BYTE *)cc + 31) = targetAddr + 91;
 							*(UINT64 *)((BYTE *)cc + 41) = dll.GetEntryPoint();
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x275 */
-							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70875;
+							UINT64 jumpBackAddr = (UINT64)md.DllBase + 0x70875; /* TODO: SigScan Me! */
 							*(UINT64 *)((BYTE *)cc + 81) = jumpBackAddr;
 							*(UINT64 *)((BYTE *)cc + 91) = g_pEntSys;
 							*(UINT64 *)((BYTE *)cc + 99) = g_pEnvSysSigged;
@@ -307,7 +307,7 @@ int wmain(int argc, wchar_t **argv)
 							printBuf(dd, sizeof dd, 32);
 
 							/* PATTERN: 48 89 4C 24 08 48 83 EC 48 +0x9 */
-							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70609), &dd[0]);
+							KMemoryBuf::Wpm<sizeof dd>(targetPID, (PVOID)((UINT64)md.DllBase + 0x70609 /* TODO: SigScan Me! */), &dd[0]);
 						}
 					}
 				}
