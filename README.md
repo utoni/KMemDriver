@@ -6,9 +6,10 @@ It can also be used to manual map a user space DLL to a protected process and hi
 
 # Dependencies
 - Visual Studio 2017 Community Edition
+- Visual C++ MFC for x86 and x64
 - Windows 10 x64 1803 (may work on older versions, not verified)
 - Windows 10 SDK 10.0.17763.0
-- Windows Driver Kit
+- Windows Driver Kit 1803 (10.0.17763.0)
 - Windows Universal CRT SDK
 - C++/CLI support
 - VC++ 2017 tools
