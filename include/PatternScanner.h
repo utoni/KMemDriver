@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <functional>
 
 
 typedef bool(*map_file_cb)(SymbolResolver& symres, IN MODULE_DATA&, OUT PVOID * const,
@@ -40,6 +41,8 @@ public:
 		m_LowAddress = startAddress;
 	}
 	bool Scan(MODULE_DATA& module, const char * const pattern, std::vector<SIZE_T>& foundAddresses);
+	static bool ScanForAddress(HANDLE targetPID, MODULE_DATA& module, PatternScanner *pscan, const char * const pattern, std::function<bool(SIZE_T)> callback);
+
 private:
 	bool checkPattern(MODULE_DATA& module, const char * const pattern, std::string& result);
 	bool doScan(std::string& pattern, UINT8 *buf, SIZE_T size, std::vector<SIZE_T>& foundAddresses);

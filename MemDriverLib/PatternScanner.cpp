@@ -215,3 +215,18 @@ bool PatternScanner::Scan(MODULE_DATA& module, const char * const pattern, std::
 
 	return result;
 }
+
+bool PatternScanner::ScanForAddress(HANDLE targetPID, MODULE_DATA& module, PatternScanner *pscan, const char * const pattern, std::function<bool(SIZE_T)> callback)
+{
+	std::vector<SIZE_T> foundAddresses;
+
+	pscan->Scan(module, "48 8B 48 20 48 8B 01 FF 90 20 01 00 00", foundAddresses);
+
+	for (auto& addr : foundAddresses) {
+		if (callback(addr)) {
+			return true;
+		}
+	}
+
+	return false;
+}
