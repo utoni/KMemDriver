@@ -2,6 +2,7 @@
 
 #include "KMemDriver.h"
 
+#include <stdexcept>
 #include <vector>
 #include <Windows.h>
 
