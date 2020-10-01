@@ -376,5 +376,32 @@ typedef struct _HANDLE_TABLE
 	PVOID DebugInfo;
 } PHANDLE_TABLE;
 
+typedef struct _SYSTEM_PROCESS_INFORMATION {
+	ULONG NextEntryOffset;
+	ULONG NumberOfThreads;
+	UINT8 Reserved1[48];
+	UNICODE_STRING ImageName;
+	KPRIORITY BasePriority;
+	ULONG Reserved2;
+	HANDLE UniqueProcessId;
+	PVOID Reserved3;
+	ULONG HandleCount;
+	ULONG SessionId;
+	PVOID Reserved4;
+	SIZE_T PeakVirtualSize;
+	SIZE_T VirtualSize;
+	ULONG Reserved5;
+	SIZE_T PeakWorkingSetSize;
+	SIZE_T WorkingSetSize;
+	PVOID Reserved6;
+	SIZE_T QuotaPagedPoolUsage;
+	PVOID Reserved7;
+	SIZE_T QuotaNonPagedPoolUsage;
+	SIZE_T PagefileUsage;
+	SIZE_T PeakPagefileUsage;
+	SIZE_T PrivatePageCount;
+	LARGE_INTEGER Reserved8[6];
+} SYSTEM_PROCESS_INFORMATION;
+
 #pragma pack(pop)
 #pragma warning(default : 4214 4201)

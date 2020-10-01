@@ -139,3 +139,18 @@ RtlAvlRemoveNode(
 	IN PRTL_AVL_TREE pTree,
 	IN PMMADDRESS_NODE pNode
 );
+
+__kernel_entry
+NTSTATUS
+ZwQuerySystemInformation(
+	IN int SystemInformationClass,
+	OUT PVOID SystemInformation,
+	IN ULONG SystemInformationLength,
+	OUT OPTIONAL PULONG ReturnLength
+);
+
+NTKERNELAPI
+PVOID
+PsGetProcessSectionBaseAddress(
+	IN PEPROCESS Process
+);
