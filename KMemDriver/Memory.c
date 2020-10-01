@@ -316,3 +316,88 @@ NTSTATUS FreeMemoryFromProcess(IN PEPROCESS pep, IN PVOID baseAddr, IN SIZE_T si
 
 	return status;
 }
+
+NTSTATUS WritePhysicalPage(IN PVOID addr, IN PUCHAR content, IN OUT PSIZE_T content_size_and_transferred)
+{
+	PHYSICAL_ADDRESS pa = { 0 };
+	MM_COPY_ADDRESS mm = { 0 };
+	PVOID vaddr;
+
+	if (content_size_and_transferred == NULL || *content_size_and_transferred > 4096)
+	{
+		return STATUS_UNSUCCESSFUL;
+	}
+
+	pa.QuadPart = (LONGLONG)addr;
+	mm.VirtualAddress = content;
+	vaddr = MmGetVirtualForPhysical(pa);
+
+	if (vaddr == NULL)
+	{
+		return STATUS_UNSUCCESSFUL;
+	}
+	return MmCopyMemory(vaddr, mm, 4096, MM_COPY_MEMORY_VIRTUAL, content_size_and_transferred);
+}
+
+NTSTATUS ReadPhysicalPage(IN PHYSICAL_ADDRESS * addr, OUT PUCHAR content, IN OUT PSIZE_T content_size_and_transferred)
+{
+	MM_COPY_ADDRESS mm = { 0 };
+
+	if (content_size_and_transferred == NULL || *content_size_and_transferred > 4096)
+	{
+		return STATUS_UNSUCCESSFUL;
+	}
+
+	mm.PhysicalAddress = *(PHYSICAL_ADDRESS *)addr;
+	return MmCopyMemory(content, mm, 4096, MM_COPY_MEMORY_PHYSICAL, content_size_and_transferred);
+}
+
+SIZE_T GetCR3(IN PEPROCESS pep)
+{
+	SIZE_T ret;
+	KAPC_STATE apcState;
+
+	KeStackAttachProcess((PRKPROCESS)pep, &apcState);
+	ret = __readcr3();
+	KeUnstackDetachProcess(&apcState);
+
+	return ret;
+}
+
+void SetCR3(IN PEPROCESS pep, IN SIZE_T value)
+{
+	KAPC_STATE apcState;
+
+	KeStackAttachProcess((PRKPROCESS)pep, &apcState);
+	__writecr3(value);
+	KeUnstackDetachProcess(&apcState);
+}
+
+static ULONG_PTR invalidate_tlb(ULONG_PTR addr)
+{
+	__invlpg(addr);
+	return 0;
+}
+
+void FlushTLB(IN PVOID addr)
+{
+	KeIpiGenericCall(invalidate_tlb, (ULONG_PTR)addr);
+}
+
+#define IA32_PAT 0x277
+
+SIZE_T GetIA32PAT(void)
+{
+	return __readmsr(IA32_PAT);
+}
+
+static ULONG_PTR set_pat(ULONG_PTR pat)
+{
+	__writemsr(IA32_PAT, pat);
+	return 0;
+}
+
+void SetIA32PAT(IN SIZE_T value)
+{
+	KeIpiGenericCall(set_pat, value);
+}
