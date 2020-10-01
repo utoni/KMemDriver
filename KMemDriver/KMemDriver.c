@@ -188,24 +188,6 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
-void OnImageLoad(
-	PUNICODE_STRING FullImageName,
-	HANDLE ProcessId,
-	PIMAGE_INFO ImageInfo
-)
-{
-	UNREFERENCED_PARAMETER(ImageInfo);
-#if 0
-	KDBG("ProcessID: 0x%X\n", ProcessId);
-	KDBG("FullImage: %wZ\n", FullImageName);
-#endif
-	if (wcsstr(FullImageName->Buffer, CHEAT_EXE)) {
-		ctrlPID = ProcessId;
-		imageBase = ImageInfo->ImageBase;
-		KDBG("Found Target !!!\n");
-	}
-}
-
 NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 {
 	NTSTATUS status;
@@ -216,22 +198,34 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 	imageBase = NULL;
 	ctrlPID = NULL;
 
-	status = PsSetLoadImageNotifyRoutine(OnImageLoad);
-	if (!NT_SUCCESS(status)) {
-		KDBG("PsSetLoadImageNotifyRoutine failed with 0x%X\n", status);
-		return status;
-	}
+	SYSTEM_PROCESS_INFORMATION * procs = MmAllocateNonCachedMemory(1024 * sizeof(*procs));
+	ULONG mem_needed = 0;
 
-	while (!ctrlPID) {
-		LARGE_INTEGER wait = { .QuadPart = -1000000 };
-		KeDelayExecutionThread(KernelMode, TRUE, &wait);
+	if (procs == NULL) {
+		return STATUS_MEMORY_NOT_ALLOCATED;
 	}
+	while (ctrlPID == NULL) {
+		status = ZwQuerySystemInformation(0x05, (PVOID)&procs[0], 1024 * sizeof(*procs), &mem_needed);
+		if (!NT_SUCCESS(status)) {
+			KDBG("NtQuerySystemInformation failed with 0x%X\n", status);
+			return status;
+		}
 
-	status = PsRemoveLoadImageNotifyRoutine(OnImageLoad);
-	if (!NT_SUCCESS(status)) {
-		KDBG("PsRemoveLoadImageNotifyRoutine failed with 0x%X\n", status);
-		return status;
+		SYSTEM_PROCESS_INFORMATION * cur_proc = procs;
+		while (cur_proc->NextEntryOffset > 0) {
+			cur_proc = (SYSTEM_PROCESS_INFORMATION *)((PUCHAR)cur_proc + cur_proc->NextEntryOffset);
+
+			if (wcsstr(cur_proc->ImageName.Buffer, CHEAT_EXE)) {
+				KDBG("FOUND %wZ with PID 0x%X\n", cur_proc->ImageName, cur_proc->UniqueProcessId);
+				ctrlPID = cur_proc->UniqueProcessId;
+				break;
+			}
+
+			LARGE_INTEGER wait = { .QuadPart = -100000 };
+			KeDelayExecutionThread(KernelMode, FALSE, &wait);
+		}
 	}
+	MmFreeNonCachedMemory(procs, 1024 * sizeof(*procs));
 
 	status = PsLookupProcessByProcessId(ctrlPID, ppEProcess);
 	if (!NT_SUCCESS(status)) {
@@ -239,8 +233,14 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 		return status;
 	}
 
-	KDBG("Got Ctrl Process PID: 0x%X (%d)\n",
-		ctrlPID, ctrlPID);
+	imageBase = PsGetProcessSectionBaseAddress(*ppEProcess);
+	if (imageBase == NULL)
+	{
+		KDBG("ImageBase is NULL\n");
+	}
+
+	KDBG("Got Ctrl Process PID/ImageBase: 0x%X (%d) / %p\n",
+		ctrlPID, ctrlPID, imageBase);
 
 	return STATUS_SUCCESS;
 }
@@ -762,7 +762,7 @@ NTSTATUS GetDriverObject(
 	}
 
 	return status;
-		}
+}
 
 PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
 {
