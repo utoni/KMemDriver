@@ -30,14 +30,19 @@ int main()
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #3");
 
 		{
-			PVOID addr = (PVOID)0x60000000;
+			PVOID addr = (PVOID)SHMEM_ADDR;
 			SIZE_T size = 0x100;
+
+			KM_ASSERT_EQUAL(true,
+				ki.VAlloc((HANDLE)this_pid, &addr, &size, PAGE_READWRITE), "Kernel Interface VirtualAlloc SHMEM_ADDR");
+
+			addr = NULL;
+			size = 0x100;
+
 			KM_ASSERT_EQUAL(true,
 				ki.VAlloc((HANDLE)this_pid, &addr, &size, PAGE_READWRITE), "Kernel Interface VirtualAlloc");
-			//KM_ASSERT_EQUAL(false,
-			//	ki.VAlloc((HANDLE)this_pid, &addr, &size, PAGE_READWRITE), "Kernel Interface VirtualAlloc again should fail");
-			//KM_ASSERT_EQUAL(true,
-			//	ki.VFree((HANDLE)this_pid, addr, size), "Kernel Interface VirtualFree");
+			KM_ASSERT_EQUAL(true,
+				ki.VFree((HANDLE)this_pid, addr, size), "Kernel Interface VirtualFree");
 		}
 
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #4");
