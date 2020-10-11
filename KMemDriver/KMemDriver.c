@@ -26,6 +26,8 @@
 
 #define WAIT_OBJECT_0 ((STATUS_WAIT_0 ) + 0 )
 
+extern PVOID getCurrentRIP(void);
+
 DRIVER_INITIALIZE DriverEntry;
 #pragma alloc_text(INIT, DriverEntry)
 void OnImageLoad(
@@ -184,7 +186,6 @@ NTSTATUS DriverEntry(
 		return status;
 	}
 
-	FNZERO(DriverEntry);
 	return status;
 }
 
@@ -194,6 +195,8 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 
 	if (!ppEProcess)
 		return STATUS_INVALID_ADDRESS;
+
+	KDBG("CurrentRIP: %p\n", getCurrentRIP());
 
 	imageBase = NULL;
 	ctrlPID = NULL;
