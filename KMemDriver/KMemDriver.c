@@ -1,6 +1,7 @@
 #include "KMemDriver.h"
 #include "Imports.h"
 #include "Native.h"
+#include "Crypto.h"
 
 #include <ntddk.h>
 #include <Ntstrsafe.h>
@@ -164,6 +165,7 @@ NTSTATUS DriverEntry(
 	_In_  PUNICODE_STRING RegistryPath
 )
 {
+	CRYPT_PROLOGUE();
 	NTSTATUS status;
 	HANDLE hThread = NULL;
 	CLIENT_ID clientID = { 0 };
@@ -183,8 +185,8 @@ NTSTATUS DriverEntry(
 	if (!NT_SUCCESS(status))
 	{
 		KDBG("Failed to create worker thread. Status: 0x%X\n", status);
-		return status;
 	}
+	CRYPT_EPILOGUE();
 
 	return status;
 }

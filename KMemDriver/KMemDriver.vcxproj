@@ -173,12 +173,14 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Crypto.c" />
     <ClCompile Include="KMemDriver.c" />
     <ClCompile Include="Memory.c" />
     <ClCompile Include="VAD.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\KMemDriver.h" />
+    <ClInclude Include="Crypto.h" />
     <ClInclude Include="Imports.h" />
     <ClInclude Include="Native.h" />
   </ItemGroup>

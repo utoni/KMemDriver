@@ -20,6 +20,9 @@
     <ClInclude Include="..\include\KMemDriver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Crypto.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="KMemDriver.c">
@@ -29,6 +32,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="VAD.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Crypto.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
