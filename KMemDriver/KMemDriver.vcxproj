@@ -173,14 +173,21 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Crypto.c" />
     <ClCompile Include="KMemDriver.c" />
     <ClCompile Include="Memory.c" />
     <ClCompile Include="VAD.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\include\KMemDriver.h" />
+    <ClInclude Include="Crypto.h" />
     <ClInclude Include="Imports.h" />
     <ClInclude Include="Native.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <MASM Include="Utils.asm">
+      <GenerateDebugInformation Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateDebugInformation>
+    </MASM>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
