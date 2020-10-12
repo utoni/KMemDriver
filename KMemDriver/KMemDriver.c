@@ -27,8 +27,6 @@
 
 #define WAIT_OBJECT_0 ((STATUS_WAIT_0 ) + 0 )
 
-extern PVOID getCurrentRIP(void);
-
 DRIVER_INITIALIZE DriverEntry;
 #pragma alloc_text(INIT, DriverEntry)
 void OnImageLoad(
@@ -165,6 +163,7 @@ NTSTATUS DriverEntry(
 	_In_  PUNICODE_STRING RegistryPath
 )
 {
+	CryptoInit(CRYPTO_FNPTR(DriverEntry), NULL);
 	CRYPT_PROLOGUE();
 	NTSTATUS status;
 	HANDLE hThread = NULL;
@@ -175,6 +174,7 @@ NTSTATUS DriverEntry(
 	UNREFERENCED_PARAMETER(RegistryPath);
 
 	KDBG("Driver Loaded\n");
+
 	if (!DriverObject && RegistryPath) {
 		/* assume that we are manual mapped by PastDSE */
 		mmapedBase = RegistryPath;
@@ -197,8 +197,6 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 
 	if (!ppEProcess)
 		return STATUS_INVALID_ADDRESS;
-
-	KDBG("CurrentRIP: %p\n", getCurrentRIP());
 
 	imageBase = NULL;
 	ctrlPID = NULL;
