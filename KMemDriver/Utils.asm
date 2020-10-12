@@ -1,11 +1,11 @@
-PUBLIC getCurrentRIP
+PUBLIC getNextRIP
 
 .code _text
 
-getCurrentRIP PROC PUBLIC
+getNextRIP PROC PUBLIC
 pop rax
 push rax
 ret
-getCurrentRIP ENDP
+getNextRIP ENDP
 
 END

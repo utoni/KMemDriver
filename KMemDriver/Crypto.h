@@ -2,11 +2,16 @@
 
 #include <ntddk.h>
 
-void crypt_fn(void);
+extern PVOID getNextRIP(void);
+
+void CryptoInit(PVOID fn, ...);
+void CryptoDo(PVOID fn);
+
+#define CRYPTO_FNPTR(fn) ((PVOID)fn)
 
 #define CRYPT_PROLOGUE() \
 	do { \
-		crypt_fn(); \
+		CryptoDo(getNextRIP()); \
 		volatile UINT64 index_and_marker = { 0x11111111C0DEC0DE }; \
 		UNREFERENCED_PARAMETER(index_and_marker); \
 	} while (0)
@@ -14,5 +19,5 @@ void crypt_fn(void);
 	do { \
 		volatile UINT32 marker = 0xDEADDEAD;\
 		UNREFERENCED_PARAMETER(marker); \
-		crypt_fn(); \
+		CryptoDo(getNextRIP()); \
 	} while (0)
