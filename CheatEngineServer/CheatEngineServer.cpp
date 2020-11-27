@@ -35,9 +35,11 @@ static SOCKET make_accept_sock(const char *servspec) {
 	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
 	if (bind(sock, ai->ai_addr, (int)ai->ai_addrlen) != 0)
 	{
+		std::cout << "bind() failed" << std::endl;
 	}
 	if (listen(sock, 256) != 0)
 	{
+		std::cout << "listen() failed" << std::endl;
 	}
 	freeaddrinfo(res);
 
