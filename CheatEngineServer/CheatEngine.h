@@ -3,6 +3,7 @@
 #include <winsock.h>
 
 #define CE_PORT "52736"
+#define MSG_WAITALL 0x8
 
 typedef enum ce_command {
 	CMD_GETVERSION = 0,
@@ -63,6 +64,25 @@ static inline char const * ce_command_to_string(enum ce_command cmd)
 	}
 	return cmd_map[cmd];
 }
+
+#pragma pack(1)
+typedef struct {
+	DWORD dwFlags;
+	DWORD th32ProcessID;
+} CeCreateToolhelp32Snapshot, *PCeCreateToolhelp32Snapshot;
+
+typedef struct {
+	int result;
+	int pid;
+	int processnamesize;
+	//processname
+} CeProcessEntry, *PCeProcessEntry;
+#pragma pack()
+
+template <class T>
+class CEPacket {
+
+};
 
 class CEConnection {
 public:

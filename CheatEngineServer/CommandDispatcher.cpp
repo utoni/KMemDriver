@@ -4,6 +4,74 @@
 
 #include <iostream>
 
+
+static int recvall(SOCKET s, void *buf, int size, int flags)
+{
+	int totalreceived = 0;
+	int sizeleft = size;
+	char *buffer = (char*)buf;
+
+	flags = flags | MSG_WAITALL;
+	while (sizeleft > 0)
+	{
+		int i = recv(s, &buffer[totalreceived], sizeleft, flags);
+		if (i == 0)
+		{
+			std::cout << "recv returned 0" << std::endl;
+			return i;
+		}
+		if (i <= -1)
+		{
+			std::cout << "recv returned -1" << std::endl;
+			if (errno == EINTR)
+			{
+				std::cout << "errno = EINTR\n" << std::endl;
+				i = 0;
+			}
+			else
+			{
+				std::cout << "Error during recvall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
+				return i; //read error, or disconnected
+			}
+		}
+		totalreceived += i;
+		sizeleft -= i;
+	}
+	return totalreceived;
+}
+
+static int sendall(SOCKET s, void *buf, int size, int flags)
+{
+	int totalsent = 0;
+	int sizeleft = size;
+	char *buffer = (char*)buf;
+
+	while (sizeleft > 0)
+	{
+		int i = send(s, &buffer[totalsent], sizeleft, flags);
+
+		if (i == 0)
+		{
+			return i;
+		}
+		if (i == -1)
+		{
+			if (errno == EINTR)
+				i = 0;
+			else
+			{
+				std::cout << "Error during sendall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
+				return i;
+			}
+		}
+
+		totalsent += i;
+		sizeleft -= i;
+	}
+
+	return totalsent;
+}
+
 int DispatchCommand(CEConnection & con, char command)
 {
 	enum ce_command cmd = (enum ce_command)command;
@@ -20,8 +88,21 @@ int DispatchCommand(CEConnection & con, char command)
 		break;
 	case CMD_OPENPROCESS:
 		break;
-	case CMD_CREATETOOLHELP32SNAPSHOT:
+	case CMD_CREATETOOLHELP32SNAPSHOT: {
+		HANDLE result = (HANDLE)((ULONG_PTR)0x1);
+		CeCreateToolhelp32Snapshot params;
+
+		if (recvall(con.getSocket(), &params, sizeof(CeCreateToolhelp32Snapshot), MSG_WAITALL) > 0)
+		{
+			std::cout << "Calling CreateToolhelp32Snapshot with flags 0x" << std::hex << params.dwFlags
+				<< " for PID 0x" << std::hex << params.th32ProcessID << std::endl;
+		}
+		if (sendall(con.getSocket(), &result, sizeof(result), 0) == sizeof(result))
+		{
+			return 0;
+		}
 		break;
+	}
 	case CMD_PROCESS32FIRST:
 		break;
 	case CMD_PROCESS32NEXT:
