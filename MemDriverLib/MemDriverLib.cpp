@@ -10,6 +10,8 @@
 #include <ctime>
 #include <stdexcept>
 
+#pragma warning(push)
+#pragma warning(disable : 26812)
 
 KInterface::KInterface()
 {
@@ -51,7 +53,7 @@ bool KInterface::Pages(HANDLE targetPID,
 	PVOID start_address)
 {
 	PKERNEL_PAGE pages = (PKERNEL_PAGE)getBuffer();
-	const ULONGLONG max_pages = (SHMEM_SIZE - sizeof *pages +
+	const ULONGLONG max_pages = (SHMEM_SIZE - sizeof * pages +
 		sizeof pages->pages_start) / sizeof pages->pages_start;
 	SendRecvReturn srr;
 	bool success = false;
@@ -90,7 +92,7 @@ bool KInterface::Modules(HANDLE targetPID,
 {
 	PKERNEL_MODULES mods = (PKERNEL_MODULES)getBuffer();
 	SIZE_T start_index = 0;
-	const ULONGLONG max_mods = (SHMEM_SIZE - sizeof *mods +
+	const ULONGLONG max_mods = (SHMEM_SIZE - sizeof * mods +
 		sizeof mods->modules_start) / sizeof mods->modules_start;
 	SendRecvReturn srr;
 	bool success = false;
@@ -128,12 +130,12 @@ bool KInterface::Exit()
 	return SendRecvWait(MEM_EXIT, INFINITE) == SRR_SIGNALED;
 }
 
-bool KInterface::RPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
+bool KInterface::RPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size,
 	PKERNEL_READ_REQUEST result)
 {
 	PKERNEL_READ_REQUEST rr = (PKERNEL_READ_REQUEST)getBuffer();
 	m_last_ntstatus = INVALID_NTSTATUS;
-	if (size > SHMEM_SIZE - sizeof *rr)
+	if (size > SHMEM_SIZE - sizeof * rr)
 		return false;
 	rr->ProcessId = targetPID;
 	rr->Address = address;
@@ -155,7 +157,7 @@ bool KInterface::RPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
 				<< ")";
 			throw std::runtime_error(err_str.str());
 		}
-		memcpy(buf, (BYTE *)rr + sizeof *rr, size);
+		memcpy(buf, (BYTE*)rr + sizeof * rr, size);
 		if (result)
 			*result = *rr;
 		return true;
@@ -163,19 +165,19 @@ bool KInterface::RPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
 	return false;
 }
 
-bool KInterface::WPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
+bool KInterface::WPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size,
 	PKERNEL_WRITE_REQUEST result)
 {
 	PKERNEL_WRITE_REQUEST wr = (PKERNEL_WRITE_REQUEST)getBuffer();
 	m_last_ntstatus = INVALID_NTSTATUS;
-	if (size > SHMEM_SIZE - sizeof *wr)
+	if (size > SHMEM_SIZE - sizeof * wr)
 		return false;
 	wr->ProcessId = targetPID;
 	wr->Address = address;
 	wr->SizeReq = size;
 	wr->SizeRes = (SIZE_T)-1;
 	wr->StatusRes = (NTSTATUS)-1;
-	memcpy((BYTE *)wr + sizeof *wr, buf, size);
+	memcpy((BYTE*)wr + sizeof * wr, buf, size);
 	if (SendRecvWait(MEM_WPM) == SRR_SIGNALED) {
 		m_last_ntstatus = wr->StatusRes;
 		if (wr->StatusRes ||
@@ -198,7 +200,7 @@ bool KInterface::WPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
 	return false;
 }
 
-bool KInterface::VAlloc(HANDLE targetPID, PVOID *address, SIZE_T *size, ULONG protection)
+bool KInterface::VAlloc(HANDLE targetPID, PVOID* address, SIZE_T* size, ULONG protection)
 {
 	PKERNEL_VALLOC_REQUEST vr = (PKERNEL_VALLOC_REQUEST)getBuffer();
 	m_last_ntstatus = INVALID_NTSTATUS;
@@ -322,3 +324,5 @@ SendRecvReturn KInterface::RecvWait(DWORD timeout)
 	}
 	return SRR_ERR_UEVENT;
 }
+
+#pragma warning(pop)
