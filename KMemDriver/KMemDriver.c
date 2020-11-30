@@ -36,32 +36,32 @@ void OnImageLoad(
 );
 #pragma alloc_text(PAGE, OnImageLoad)
 
-NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess);
+NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess);
 NTSTATUS VerifyControlProcess(IN PEPROCESS pEProcess);
 NTSTATUS InitSharedMemory(IN PEPROCESS pEProcess);
 NTSTATUS WaitForHandshake(
 	IN PEPROCESS pEProcess,
-	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent
+	OUT HANDLE* pKEvent, OUT HANDLE* pUEvent
 );
 NTSTATUS OpenEventReference(
 	IN PEPROCESS pEProcess,
-	IN KAPC_STATE *pKAPCState, IN HANDLE hEvent,
-	OUT PKEVENT *pPKEvent
+	IN KAPC_STATE* pKAPCState, IN HANDLE hEvent,
+	OUT PKEVENT* pPKEvent
 );
 NTSTATUS UpdatePPEPIfRequired(
 	IN HANDLE wantedPID,
-	IN HANDLE lastPID, OUT HANDLE *lastPROC,
-	OUT PEPROCESS *lastPEP
+	IN HANDLE lastPID, OUT HANDLE* lastPROC,
+	OUT PEPROCESS* lastPEP
 );
 NTSTATUS GetPages(
 	IN PEPROCESS Process,
-	OUT MEMORY_BASIC_INFORMATION *mbiArr,
-	IN SIZE_T mbiArrLen, OUT SIZE_T *mbiUsed,
+	OUT MEMORY_BASIC_INFORMATION* mbiArr,
+	IN SIZE_T mbiArrLen, OUT SIZE_T* mbiUsed,
 	IN PVOID start_addr
 );
 NTSTATUS GetModules(
 	IN PEPROCESS pEProcess,
-	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
+	OUT PMODULE_DATA pmod, IN OUT SIZE_T* psiz,
 	IN SIZE_T start_index,
 	IN BOOLEAN isWow64
 );
@@ -79,7 +79,7 @@ NTSTATUS KeWriteVirtualMemory(
 NTSTATUS KeProtectVirtualMemory(
 	IN HANDLE hProcess,
 	IN PVOID addr, IN SIZE_T siz,
-	IN ULONG new_prot, OUT ULONG *old_prot
+	IN ULONG new_prot, OUT ULONG* old_prot
 );
 NTSTATUS KeRestoreProtectVirtualMemory(
 	IN HANDLE hProcess,
@@ -88,8 +88,8 @@ NTSTATUS KeRestoreProtectVirtualMemory(
 );
 NTSTATUS AllocMemoryToProcess(
 	IN PEPROCESS pep,
-	IN OUT PVOID *baseAddr,
-	IN OUT SIZE_T *outSize,
+	IN OUT PVOID* baseAddr,
+	IN OUT SIZE_T* outSize,
 	IN ULONG protect
 );
 NTSTATUS FreeMemoryFromProcess(
@@ -98,14 +98,14 @@ NTSTATUS FreeMemoryFromProcess(
 	IN SIZE_T size
 );
 NTSTATUS GetDriverObject(
-	IN OUT PDRIVER_OBJECT *lpObj,
+	IN OUT PDRIVER_OBJECT* lpObj,
 	IN WCHAR* DriverDirName
 );
 NTSTATUS KRThread(IN PVOID pArg);
 TABLE_SEARCH_RESULT VADFindNodeOrParent(
 	IN PMM_AVL_TABLE Table,
 	IN ULONG_PTR StartingVpn,
-	OUT PMMADDRESS_NODE *NodeOrParent
+	OUT PMMADDRESS_NODE* NodeOrParent
 );
 NTSTATUS VADFind(
 	IN PEPROCESS pProcess,
@@ -159,7 +159,7 @@ static DRIVER_OBJECT hijackedDriverOriginal;
 
 
 NTSTATUS DriverEntry(
-	_In_  DRIVER_OBJECT *DriverObject,
+	_In_  DRIVER_OBJECT* DriverObject,
 	_In_  PUNICODE_STRING RegistryPath
 )
 {
@@ -191,7 +191,7 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
-NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
+NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess)
 {
 	NTSTATUS status;
 
@@ -201,7 +201,7 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 	imageBase = NULL;
 	ctrlPID = NULL;
 
-	SYSTEM_PROCESS_INFORMATION * procs = MmAllocateNonCachedMemory(1024 * sizeof(*procs));
+	SYSTEM_PROCESS_INFORMATION* procs = MmAllocateNonCachedMemory(1024 * sizeof(*procs));
 	ULONG mem_needed = 0;
 
 	if (procs == NULL) {
@@ -214,19 +214,19 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS *ppEProcess)
 			return status;
 		}
 
-		SYSTEM_PROCESS_INFORMATION * cur_proc = procs;
+		SYSTEM_PROCESS_INFORMATION* cur_proc = procs;
 		while (cur_proc->NextEntryOffset > 0) {
-			cur_proc = (SYSTEM_PROCESS_INFORMATION *)((PUCHAR)cur_proc + cur_proc->NextEntryOffset);
+			cur_proc = (SYSTEM_PROCESS_INFORMATION*)((PUCHAR)cur_proc + cur_proc->NextEntryOffset);
 
 			if (wcsstr(cur_proc->ImageName.Buffer, CHEAT_EXE)) {
 				KDBG("FOUND %wZ with PID 0x%X\n", cur_proc->ImageName, cur_proc->UniqueProcessId);
 				ctrlPID = cur_proc->UniqueProcessId;
 				break;
 			}
-
-			LARGE_INTEGER wait = { .QuadPart = -100000 };
-			KeDelayExecutionThread(KernelMode, FALSE, &wait);
 		}
+
+		LARGE_INTEGER wait = { .QuadPart = -100000 };
+		KeDelayExecutionThread(KernelMode, TRUE, &wait);
 	}
 	MmFreeNonCachedMemory(procs, 1024 * sizeof(*procs));
 
@@ -293,7 +293,7 @@ NTSTATUS InitSharedMemory(IN PEPROCESS pEProcess)
 
 NTSTATUS WaitForHandshake(
 	IN PEPROCESS pEProcess,
-	OUT HANDLE *pKEvent, OUT HANDLE *pUEvent
+	OUT HANDLE* pKEvent, OUT HANDLE* pUEvent
 )
 {
 	NTSTATUS status = STATUS_UNSUCCESSFUL;
@@ -327,8 +327,8 @@ NTSTATUS WaitForHandshake(
 
 NTSTATUS OpenEventReference(
 	IN PEPROCESS pEProcess,
-	IN KAPC_STATE *pKAPCState, IN HANDLE hEvent,
-	OUT PKEVENT *pPKEvent
+	IN KAPC_STATE* pKAPCState, IN HANDLE hEvent,
+	OUT PKEVENT* pPKEvent
 )
 {
 	NTSTATUS status;
@@ -469,7 +469,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							ping->rnd_user);
 						ping->rnd_kern = ping->rnd_user;
 
-						siz = sizeof *ping;
+						siz = sizeof * ping;
 						KeWriteVirtualMemory(ctrlPEP, ping, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
@@ -483,12 +483,12 @@ NTSTATUS KRThread(IN PVOID pArg)
 							running = 0;
 							break;
 						}
-						siz = (SHMEM_SIZE - sizeof *pages + sizeof pages->pages_start)
+						siz = (SHMEM_SIZE - sizeof * pages + sizeof pages->pages_start)
 							/ sizeof pages->pages_start;
 						pages->StatusRes = GetPages(lastPEP, &pages->pages_start, siz,
 							&pages->pages, pages->StartAddress);
 
-						siz = (sizeof *pages - sizeof pages->pages_start) +
+						siz = (sizeof * pages - sizeof pages->pages_start) +
 							sizeof pages->pages_start * pages->pages;
 						KeWriteVirtualMemory(ctrlPEP, pages, (PVOID)SHMEM_ADDR, &siz);
 						break;
@@ -503,7 +503,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							running = 0;
 							break;
 						}
-						siz = (SHMEM_SIZE - sizeof *mods + sizeof mods->modules_start)
+						siz = (SHMEM_SIZE - sizeof * mods + sizeof mods->modules_start)
 							/ sizeof mods->modules_start;
 						PMODULE_DATA entries = &mods->modules_start;
 						KDBG("GetModules max entries: %u\n", siz);
@@ -513,7 +513,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeUnstackDetachProcess(&apcstate);
 						mods->modules = siz;
 
-						siz = (sizeof *mods - sizeof mods->modules_start) +
+						siz = (sizeof * mods - sizeof mods->modules_start) +
 							sizeof mods->modules_start * mods->modules;
 						KeWriteVirtualMemory(ctrlPEP, mods, (PVOID)SHMEM_ADDR, &siz);
 						break;
@@ -528,8 +528,8 @@ NTSTATUS KRThread(IN PVOID pArg)
 							running = 0;
 							break;
 						}
-						if (rr->SizeReq > SHMEM_SIZE - sizeof *rr) {
-							siz = SHMEM_SIZE - sizeof *rr;
+						if (rr->SizeReq > SHMEM_SIZE - sizeof * rr) {
+							siz = SHMEM_SIZE - sizeof * rr;
 						}
 						else {
 							siz = rr->SizeReq;
@@ -539,16 +539,16 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KDBG("RPM to 0x%p size 0x%X bytes (protection before/after: 0x%X/0x%X)\n",
 							rr->Address, rr->SizeReq, old_prot, new_prot);
 						rr->StatusRes = KeReadVirtualMemory(lastPEP, (PVOID)rr->Address,
-							(PVOID)((ULONG_PTR)shm_buf + sizeof *rr), &siz);
+							(PVOID)((ULONG_PTR)shm_buf + sizeof * rr), &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, rr->Address, rr->SizeReq, old_prot);
 
 						if (NT_SUCCESS(rr->StatusRes)) {
 							rr->SizeRes = siz;
-							siz += sizeof *rr;
+							siz += sizeof * rr;
 						}
 						else {
 							rr->SizeRes = 0;
-							siz = sizeof *rr;
+							siz = sizeof * rr;
 						}
 						KeWriteVirtualMemory(ctrlPEP, rr, (PVOID)SHMEM_ADDR, &siz);
 						break;
@@ -563,8 +563,8 @@ NTSTATUS KRThread(IN PVOID pArg)
 							running = 0;
 							break;
 						}
-						if (wr->SizeReq > SHMEM_SIZE - sizeof *wr) {
-							siz = SHMEM_SIZE - sizeof *wr;
+						if (wr->SizeReq > SHMEM_SIZE - sizeof * wr) {
+							siz = SHMEM_SIZE - sizeof * wr;
 						}
 						else {
 							siz = wr->SizeReq;
@@ -573,17 +573,17 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, new_prot, &old_prot);
 						KDBG("WPM to 0x%p size 0x%X bytes (protection before/after: 0x%X/0x%X)\n",
 							wr->Address, wr->SizeReq, old_prot, new_prot);
-						wr->StatusRes = KeWriteVirtualMemory(lastPEP, (PVOID)((ULONG_PTR)shm_buf + sizeof *wr),
+						wr->StatusRes = KeWriteVirtualMemory(lastPEP, (PVOID)((ULONG_PTR)shm_buf + sizeof * wr),
 							(PVOID)wr->Address, &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, old_prot);
 
 						if (NT_SUCCESS(wr->StatusRes)) {
 							wr->SizeRes = siz;
-							siz += sizeof *wr;
+							siz += sizeof * wr;
 						}
 						else {
 							wr->SizeRes = 0;
-							siz = sizeof *wr;
+							siz = sizeof * wr;
 						}
 						KeWriteVirtualMemory(ctrlPEP, wr, (PVOID)SHMEM_ADDR, &siz);
 						break;
@@ -607,7 +607,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 							KDBG("System changed VALLOC address to 0x%p and size 0x%lX\n", vr->AddressRes, vr->SizeRes);
 						}
 
-						siz = sizeof *vr;
+						siz = sizeof * vr;
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
@@ -623,7 +623,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						}
 						vr->StatusRes = FreeMemoryFromProcess(lastPEP, vr->Address, vr->Size);
 
-						siz = sizeof *vr;
+						siz = sizeof * vr;
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
@@ -639,7 +639,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						}
 						vr->StatusRes = VADUnlink(lastPEP, (ULONG_PTR)vr->Address);
 
-						siz = sizeof *vr;
+						siz = sizeof * vr;
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
@@ -696,8 +696,8 @@ NTSTATUS KRThread(IN PVOID pArg)
 
 NTSTATUS UpdatePPEPIfRequired(
 	IN HANDLE wantedPID,
-	IN HANDLE lastPID, OUT HANDLE *lastPROC,
-	OUT PEPROCESS *lastPEP
+	IN HANDLE lastPID, OUT HANDLE* lastPROC,
+	OUT PEPROCESS* lastPEP
 )
 {
 	NTSTATUS status = STATUS_SUCCESS;
@@ -734,7 +734,7 @@ static void fn_zero_text(PVOID fn_start)
 
 	KDBG("Fn: %p\n", fn_start);
 	for (i = 0; i < 0x1000; ++i && fnbuf++) {
-		if (*(UINT32 *)fnbuf == marker) {
+		if (*(UINT32*)fnbuf == marker) {
 			KDBG("Marker: 0x%X\n", i);
 			RtlSecureZeroMemory(fn_start, i + 4);
 		}
@@ -742,7 +742,7 @@ static void fn_zero_text(PVOID fn_start)
 }
 
 NTSTATUS GetDriverObject(
-	IN OUT PDRIVER_OBJECT *lpObj,
+	IN OUT PDRIVER_OBJECT* lpObj,
 	IN WCHAR* DriverDirName
 )
 {
@@ -778,7 +778,7 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
 	if (v2 >= *(DWORD*)pHandleTable)
 		return 0i64;
 	v3 = *((uintptr_t*)pHandleTable + 1);
-	v4 = *((uintptr_t *)pHandleTable + 1) & 3i64;
+	v4 = *((uintptr_t*)pHandleTable + 1) & 3i64;
 	if ((UINT32)v4 == 1)
 	{
 		v5 = *(uintptr_t*)(v3 + 8 * (v2 >> 10) - 1);
@@ -786,7 +786,7 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
 	}
 	if ((UINT32)v4)
 	{
-		v5 = *(uintptr_t*)(*(uintptr_t *)(v3 + 8 * (v2 >> 19) - 2) + 8 * ((v2 >> 10) & 0x1FF));
+		v5 = *(uintptr_t*)(*(uintptr_t*)(v3 + 8 * (v2 >> 19) - 2) + 8 * ((v2 >> 10) & 0x1FF));
 		return (PHANDLE_TABLE_ENTRY)(v5 + 4 * (v2 & 0x3FF));
 	}
 	return (PHANDLE_TABLE_ENTRY)(v3 + 4 * v2);
