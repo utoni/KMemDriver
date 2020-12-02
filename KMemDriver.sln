@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28307.421
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30114.105
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "KMemDriver", "KMemDriver\KMemDriver.vcxproj", "{5B65BD0E-C43C-41E3-A016-1CD0B092998F}"
 EndProject
@@ -24,25 +24,24 @@ Global
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Debug|x64.ActiveCfg = Debug|x64
 		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Debug|x64.Build.0 = Debug|x64
-		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Release|x64.ActiveCfg = Debug|x64
-		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Release|x64.Build.0 = Debug|x64
-		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Release|x64.Deploy.0 = Release|x64
+		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Release|x64.ActiveCfg = Release|x64
+		{5B65BD0E-C43C-41E3-A016-1CD0B092998F}.Release|x64.Build.0 = Release|x64
 		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Debug|x64.ActiveCfg = Debug|x64
 		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Debug|x64.Build.0 = Debug|x64
-		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x64.ActiveCfg = Debug|x64
-		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x64.Build.0 = Debug|x64
-		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Debug|x64.ActiveCfg = Release|x64
-		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Debug|x64.Build.0 = Release|x64
+		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x64.ActiveCfg = Release|x64
+		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB}.Release|x64.Build.0 = Release|x64
+		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Debug|x64.ActiveCfg = Debug|x64
+		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Debug|x64.Build.0 = Debug|x64
 		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Release|x64.ActiveCfg = Release|x64
 		{E27E6F2C-154E-46AF-BED4-78D50C751565}.Release|x64.Build.0 = Release|x64
 		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Debug|x64.ActiveCfg = Debug|x64
 		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Debug|x64.Build.0 = Debug|x64
-		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Release|x64.ActiveCfg = Debug|x64
-		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Release|x64.Build.0 = Debug|x64
+		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Release|x64.ActiveCfg = Release|x64
+		{AD4E6887-32BA-4CC9-924C-18F0ECAFB576}.Release|x64.Build.0 = Release|x64
 		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Debug|x64.ActiveCfg = Debug|x64
 		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Debug|x64.Build.0 = Debug|x64
-		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Release|x64.ActiveCfg = Debug|x64
-		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Release|x64.Build.0 = Debug|x64
+		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Release|x64.ActiveCfg = Release|x64
+		{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
