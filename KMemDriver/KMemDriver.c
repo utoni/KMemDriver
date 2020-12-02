@@ -7,34 +7,10 @@
 #include <Ntstrsafe.h>
 
 #define CHEAT_EXE L"kmem"
-
-#ifndef _DEBUG_
-#define FNZERO_MARKER() \
-	do { \
-		volatile UINT32 marker = 0xDEADC0DE;\
-		UNREFERENCED_PARAMETER(marker); \
-	} while (0)
-#define FNZERO_FN(fn_start) \
-	do { fn_zero_text((PVOID)fn_start); } while (0)
-#define FNZERO(fn_start) \
-	FNZERO_MARKER(); \
-	FNZERO_FN(fn_start)
-#else
-#define FNZERO_MARKER()
-#define FNZERO_FN(fn_start)
-#define FNZERO(fn_start)
-#endif
-
-#define WAIT_OBJECT_0 ((STATUS_WAIT_0 ) + 0 )
+#d3efine WAIT_OBJECT_0 ((STATUS_WAIT_0 ) + 0 )
 
 DRIVER_INITIALIZE DriverEntry;
 #pragma alloc_text(INIT, DriverEntry)
-void OnImageLoad(
-	PUNICODE_STRING FullImageName,
-	HANDLE ProcessId,
-	PIMAGE_INFO ImageInfo
-);
-#pragma alloc_text(PAGE, OnImageLoad)
 
 NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess);
 NTSTATUS VerifyControlProcess(IN PEPROCESS pEProcess);
@@ -369,37 +345,6 @@ NTSTATUS KRThread(IN PVOID pArg)
 			IoGetStackLimits(&low, &high);
 			KDBG("Stack limits (high/low/total/remaining): 0x%p/0x%p/0x%X/0x%X\n",
 				low, high, high - low, IoGetRemainingStackSize());
-		}
-
-		if (mmapedBase && !hijackedDriver &&
-			NT_SUCCESS(GetDriverObject(&hijackedDriver, L"\\Driver\\ahcache")))
-		{
-			if (hijackedDriver) {
-#ifdef _DEBUG_
-				KDBG("Got DriverObject at 0x%p\n", hijackedDriver);
-				PKLDR_DATA_TABLE_ENTRY drv_section = hijackedDriver->DriverSection;
-				KDBG("PDrvObj: base -> 0x%p , name -> '%wZ' , flags -> 0x%X\n",
-					drv_section->DllBase, drv_section->BaseDllName, drv_section->Flags);
-#endif
-				/* !!! EXPERIMENTAL !!! */
-#if 0
-				hijacked = 1;
-				/* the following lines are known to cause a bugcheck */
-				hijackedDriverOriginal = *hijackedDriver;
-				hijackedDriver->DriverStart = mmapedBase;
-				//hijackedDriver->DriverSection = (PVOID)((ULONG_PTR)mmapedBase + 100);
-#endif
-#if 0
-				/* the following lines are known to not work with ahcache driver */
-				hijackedDriver->DriverInit = (PDRIVER_INITIALIZE)DriverEntry;
-				hijackedDriver->DriverStartIo = NULL;
-				hijackedDriver->DriverUnload = NULL;
-				SIZE_T funcs = sizeof hijackedDriver->MajorFunction / sizeof hijackedDriver->MajorFunction[0];
-				for (SIZE_T i = 0; i < funcs; ++i) {
-					hijackedDriver->MajorFunction[i] = NULL;
-				}
-#endif
-			}
 		}
 
 		status = WaitForControlProcess(&ctrlPEP);
