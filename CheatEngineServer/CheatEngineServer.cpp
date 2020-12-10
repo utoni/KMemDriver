@@ -8,10 +8,10 @@
 #include "CheatEngine.h"
 #include "CommandDispatcher.h"
 
-static SOCKET make_accept_sock(const char *servspec) {
+static SOCKET make_accept_sock(const char* servspec) {
 	const int one = 1;
 	struct addrinfo hints = {};
-	struct addrinfo *res = 0, *ai = 0, *ai4 = 0;
+	struct addrinfo* res = 0, * ai = 0, * ai4 = 0;
 	SOCKET sock;
 
 	hints.ai_family = PF_UNSPEC;
@@ -31,8 +31,12 @@ static SOCKET make_accept_sock(const char *servspec) {
 	}
 	ai = ai ? ai : ai4;
 
+	if (ai == NULL) {
+		return NULL;
+	}
+
 	sock = socket(ai->ai_family, SOCK_STREAM, 0);
-	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char *)&one, sizeof(one));
+	setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one));
 	if (bind(sock, ai->ai_addr, (int)ai->ai_addrlen) != 0)
 	{
 		std::cout << "bind() failed" << std::endl;
@@ -59,8 +63,13 @@ static void new_connection(SOCKET sock) {
 	}
 }
 
-static void accept_loop(const char *servspec) {
+static void accept_loop(const char* servspec) {
 	SOCKET sock = make_accept_sock(servspec);
+
+	if (sock == NULL)
+	{
+		return;
+	}
 
 	for (;;) {
 		SOCKET new_sock = accept(sock, 0, 0);

@@ -5,6 +5,8 @@
 #define CE_PORT "52736"
 #define MSG_WAITALL 0x8
 
+#pragma warning(push)
+#pragma warning(disable : 26812)
 typedef enum ce_command {
 	CMD_GETVERSION = 0,
 	CMD_CLOSECONNECTION,
@@ -45,9 +47,9 @@ typedef enum ce_command {
 	CMD_MAX
 } ce_command;
 
-static inline char const * ce_command_to_string(enum ce_command cmd)
+static inline char const* ce_command_to_string(enum ce_command cmd)
 {
-	static char const * const cmd_map[] = {
+	static char const* const cmd_map[] = {
 	"CMD_GETVERSION", "CMD_CLOSECONNECTION", "CMD_TERMINATESERVER", "CMD_OPENPROCESS",
 	"CMD_CREATETOOLHELP32SNAPSHOT", "CMD_PROCESS32FIRST", "CMD_PROCESS32NEXT", "CMD_CLOSEHANDLE",
 	"CMD_VIRTUALQUERYEX", "CMD_READPROCESSMEMORY", "CMD_WRITEPROCESSMEMORY", "CMD_STARTDEBUG",
@@ -64,25 +66,21 @@ static inline char const * ce_command_to_string(enum ce_command cmd)
 	}
 	return cmd_map[cmd];
 }
+#pragma warning(pop)
 
 #pragma pack(1)
 typedef struct {
 	DWORD dwFlags;
 	DWORD th32ProcessID;
-} CeCreateToolhelp32Snapshot, *PCeCreateToolhelp32Snapshot;
+} CeCreateToolhelp32Snapshot, * PCeCreateToolhelp32Snapshot;
 
 typedef struct {
 	int result;
 	int pid;
 	int processnamesize;
 	//processname
-} CeProcessEntry, *PCeProcessEntry;
+} CeProcessEntry, * PCeProcessEntry;
 #pragma pack()
-
-template <class T>
-class CEPacket {
-
-};
 
 class CEConnection {
 public:
