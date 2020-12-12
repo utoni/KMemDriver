@@ -28,17 +28,18 @@ public:
 	bool Init();
 	bool Handshake();
 	bool Ping();
+	bool Processes(std::vector<PROCESS_DATA>& dest);
 	bool Pages(HANDLE targetPID,
 		std::vector<MEMORY_BASIC_INFORMATION>& dest,
 		PVOID start_address = NULL);
 	bool Modules(HANDLE targetPID,
 		std::vector<MODULE_DATA>& dest);
 	bool Exit();
-	bool RPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
+	bool RPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size,
 		PKERNEL_READ_REQUEST result);
-	bool WPM(HANDLE targetPID, PVOID address, BYTE *buf, SIZE_T size,
+	bool WPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size,
 		PKERNEL_WRITE_REQUEST result);
-	bool VAlloc(HANDLE targetPID, PVOID *address, SIZE_T *size, ULONG protection);
+	bool VAlloc(HANDLE targetPID, PVOID* address, SIZE_T* size, ULONG protection);
 	bool VFree(HANDLE targetPID, PVOID address, SIZE_T size);
 	bool VUnlink(HANDLE targetPID, PVOID address);
 
@@ -70,8 +71,8 @@ public:
 		return buf;
 	}
 	template <class T>
-	static void Wpm(HANDLE targetPID, PVOID address, T *buf) {
-		if (!KInterface::getInstance().WPM(targetPID, address, (BYTE*)buf, sizeof *buf, NULL))
+	static void Wpm(HANDLE targetPID, PVOID address, T* buf) {
+		if (!KInterface::getInstance().WPM(targetPID, address, (BYTE*)buf, sizeof * buf, NULL))
 			throw std::runtime_error("KMemory WPM failed");
 	}
 };
@@ -80,14 +81,14 @@ class KMemoryBuf
 {
 public:
 	template <size_t SIZE>
-	static SSIZE_T Rpm(HANDLE targetPID, PVOID address, BYTE *dest) {
+	static SSIZE_T Rpm(HANDLE targetPID, PVOID address, BYTE* dest) {
 		KERNEL_READ_REQUEST rr = { 0 };
 		if (!KInterface::getInstance().RPM(targetPID, address, &dest[0], SIZE, &rr))
 			return -1;
 		return rr.SizeRes;
 	}
 	template <size_t SIZE>
-	static SSIZE_T Wpm(HANDLE targetPID, PVOID address, BYTE *dest) {
+	static SSIZE_T Wpm(HANDLE targetPID, PVOID address, BYTE* dest) {
 		KERNEL_WRITE_REQUEST wr = { 0 };
 		if (!KInterface::getInstance().WPM(targetPID, address, &dest[0], SIZE, &wr))
 			return -1;

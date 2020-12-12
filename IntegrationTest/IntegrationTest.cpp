@@ -18,10 +18,10 @@ int main()
 {
 	HANDLE this_pid = (HANDLE)((ULONG_PTR)GetCurrentProcessId());
 
+	KInterface& ki = KInterface::getInstance();
 	KM_ASSERT_EQUAL(true, true, "Integration Test Init");
 
 	try {
-		KInterface& ki = KInterface::getInstance();
 		KM_ASSERT_EQUAL(true, ki.Init(), "Kernel Interface Init");
 		KM_ASSERT_EQUAL(true, ki.Handshake(), "Kernel Interface Handshake");
 		KM_ASSERT_EQUAL(true, ki.getBuffer() != NULL, "Kernel Interface Buffer != NULL");
@@ -32,10 +32,49 @@ int main()
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #3");
 
 		{
+			SIZE_T required_processes_found = 0;
+			std::vector<PROCESS_DATA> processes;
+			KM_ASSERT_EQUAL(true, ki.Processes(processes), "Kernel Interface Processes");
+			KM_ASSERT_EQUAL(0, ki.getLastNtStatus(), "Last NtStatus");
+
+			for (auto& process : processes)
+			{
+				//std::cout << "Process Name: " << process.ImageName << std::endl;
+				if (strcmp(process.ImageName, "IntegrationTest-kmem.exe") == 0 && strlen(process.ImageName) == strlen("IntegrationTest-kmem.exe"))
+				{
+					required_processes_found++;
+				}
+				if (strcmp(process.ImageName, "System") == 0 && strlen(process.ImageName) == strlen("System"))
+				{
+					required_processes_found++;
+				}
+				if (strcmp(process.ImageName, "Registry") == 0 && strlen(process.ImageName) == strlen("Registry"))
+				{
+					required_processes_found++;
+				}
+				if (strcmp(process.ImageName, "wininit.exe") == 0 && strlen(process.ImageName) == strlen("wininit.exe"))
+				{
+					required_processes_found++;
+				}
+				if (strcmp(process.ImageName, "winlogon.exe") == 0 && strlen(process.ImageName) == strlen("winlogon.exe"))
+				{
+					required_processes_found++;
+				}
+				if (strcmp(process.ImageName, "lsass.exe") == 0 && strlen(process.ImageName) == strlen("lsass.exe"))
+				{
+					required_processes_found++;
+				}
+			}
+			KM_ASSERT_EQUAL(6, required_processes_found, "Kernel Interface Modules (6 required found)");
+		}
+
+		{
 			SIZE_T required_modules_found = 0;
 			std::vector<MODULE_DATA> modules;
 			KM_ASSERT_EQUAL(true, ki.Modules(this_pid, modules), "Kernel Interface Modules");
+			KM_ASSERT_EQUAL(0, ki.getLastNtStatus(), "Last NtStatus");
 			for (auto& module : modules) {
+				//std::cout << "DLL Name: " << module.BaseDllName << std::endl;
 				if (strcmp(module.BaseDllName, "IntegrationTest-kmem.exe") == 0 && strlen(module.BaseDllName) == strlen("IntegrationTest-kmem.exe"))
 				{
 					required_modules_found++;
@@ -56,6 +95,7 @@ int main()
 			SIZE_T found_shmaddr = 0;
 			std::vector<MEMORY_BASIC_INFORMATION> pages;
 			KM_ASSERT_EQUAL(true, ki.Pages(this_pid, pages), "Kernel Interface Pages");
+			KM_ASSERT_EQUAL(0, ki.getLastNtStatus(), "Last NtStatus");
 			for (auto& page : pages) {
 				if (page.BaseAddress == (PVOID)SHMEM_ADDR && page.RegionSize == SHMEM_SIZE) {
 					found_shmaddr++;
@@ -89,6 +129,7 @@ int main()
 
 	std::wcout << "Done." << std::endl;
 error:
-	std::wcout << std::endl << "[PRESS RETURN KEY TO EXIT]" << std::endl;
+	ki.Exit();
+	std::wcout << std::endl << "KMemDriver Shutdown [PRESS RETURN KEY TO EXIT]" << std::endl;
 	getchar();
 }

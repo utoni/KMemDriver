@@ -167,6 +167,60 @@ NTSTATUS DriverEntry(
 	return status;
 }
 
+NTSTATUS GetProcesses(OUT PROCESS_DATA* procs, IN OUT SIZE_T* psiz)
+{
+	SIZE_T const max_siz = *psiz;
+	ULONG mem_needed = 0;
+
+	NTSTATUS status = ZwQuerySystemInformation(0x05, NULL, 0, &mem_needed);
+	if (!NT_SUCCESS(status) && mem_needed == 0) {
+		KDBG("NtQuerySystemInformation(ReturnLength: %lu) failed with 0x%X\n", mem_needed, status);
+		return status;
+	}
+
+	if (mem_needed / sizeof(SYSTEM_PROCESS_INFORMATION) > max_siz / sizeof(PROCESS_DATA)) {
+		KDBG("NtQuerySystemInformation buffer too small\n", status);
+		return STATUS_BUFFER_TOO_SMALL;
+	}
+
+	SYSTEM_PROCESS_INFORMATION* sysinfo = MmAllocateNonCachedMemory(mem_needed);
+	if (sysinfo == NULL) {
+		return STATUS_NO_MEMORY;
+	}
+
+	status = ZwQuerySystemInformation(0x05, sysinfo, mem_needed, NULL);
+	if (!NT_SUCCESS(status)) {
+		KDBG("NtQuerySystemInformation(SystemInformationLength: %lu) failed with 0x%X\n", mem_needed, status);
+		goto free_memory;
+	}
+
+	*psiz = 0;
+	SYSTEM_PROCESS_INFORMATION* cur_proc = sysinfo;
+	while (cur_proc->NextEntryOffset > 0 && *psiz < max_siz) {
+		cur_proc = (SYSTEM_PROCESS_INFORMATION*)((PUCHAR)cur_proc + cur_proc->NextEntryOffset);
+
+		ANSI_STRING name;
+		if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &cur_proc->ImageName, TRUE))) {
+			SIZE_T len = (name.Length >= sizeof(procs->ImageName) ? sizeof(procs->ImageName) - 1 : name.Length);
+			RtlCopyMemory(procs->ImageName, name.Buffer, len);
+			procs->ImageName[len] = '\0';
+			RtlFreeAnsiString(&name);
+		}
+
+		procs->NumberOfThreads = cur_proc->NumberOfThreads;
+		procs->UniqueProcessId = cur_proc->UniqueProcessId;
+		procs->HandleCount = cur_proc->HandleCount;
+
+		*psiz += sizeof(procs[0]);
+		procs++;
+	}
+	KDBG("Found %zu processes\n", *psiz / sizeof(*procs));
+
+free_memory:
+	MmFreeNonCachedMemory(sysinfo, mem_needed);
+	return status;
+}
+
 NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess)
 {
 	NTSTATUS status;
@@ -416,6 +470,24 @@ NTSTATUS KRThread(IN PVOID pArg)
 
 						siz = sizeof * ping;
 						KeWriteVirtualMemory(ctrlPEP, ping, (PVOID)SHMEM_ADDR, &siz);
+						break;
+					}
+					case MEM_PROCESSES: {
+						PKERNEL_PROCESSES_REQUEST procs = (PKERNEL_PROCESSES_REQUEST)shm_buf;
+						PROCESS_DATA* data = (PPROCESS_DATA)(procs + 1);
+						siz = SHMEM_SIZE - sizeof(*procs);
+						//siz = sizeof(*data) * 128;
+						KDBG("Got a PROCESSES request\n");
+
+						procs->ProcessCount = 0;
+						procs->StatusRes = GetProcesses(data, &siz);
+						if (!NT_SUCCESS(procs->StatusRes))
+						{
+							break;
+						}
+
+						procs->ProcessCount = siz / sizeof(*data);
+						KeWriteVirtualMemory(ctrlPEP, procs, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
 					case MEM_PAGES: {

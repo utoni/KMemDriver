@@ -7,8 +7,8 @@
 
 NTSTATUS GetPages(
 	IN PEPROCESS Process,
-	OUT MEMORY_BASIC_INFORMATION *mbiArr,
-	IN SIZE_T mbiArrLen, OUT SIZE_T *mbiUsed,
+	OUT MEMORY_BASIC_INFORMATION* mbiArr,
+	IN SIZE_T mbiArrLen, OUT SIZE_T* mbiUsed,
 	IN PVOID start_addr
 )
 {
@@ -31,8 +31,8 @@ NTSTATUS GetPages(
 	do {
 		mbiReturn = 0;
 		status = ZwQueryVirtualMemory(procHandle, (PVOID)baseAddr,
-			MemoryBasicInformation, mbiArr, sizeof *mbiArr * mbiArrLen, &mbiReturn);
-		mbiLength = mbiReturn / sizeof *mbiArr;
+			MemoryBasicInformation, mbiArr, sizeof * mbiArr * mbiArrLen, &mbiReturn);
+		mbiLength = mbiReturn / sizeof * mbiArr;
 		if (!NT_SUCCESS(status)) {
 			if (status == STATUS_INVALID_PARAMETER)
 				status = STATUS_SUCCESS;
@@ -58,7 +58,7 @@ NTSTATUS GetPages(
 
 NTSTATUS GetModules(
 	IN PEPROCESS Process,
-	OUT PMODULE_DATA pmod, IN OUT SIZE_T *psiz,
+	OUT PMODULE_DATA pmod, IN OUT SIZE_T* psiz,
 	IN SIZE_T start_index,
 	IN BOOLEAN isWow64
 )
@@ -106,20 +106,18 @@ NTSTATUS GetModules(
 			tmpUnicodeStr.Length = ldrEntry32->BaseDllName.Length;
 			tmpUnicodeStr.MaximumLength = ldrEntry32->BaseDllName.MaximumLength;
 			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &tmpUnicodeStr, TRUE))) {
-				RtlCopyMemory(pmod->BaseDllName, name.Buffer,
-					(name.Length > sizeof pmod->BaseDllName ?
-						sizeof pmod->BaseDllName : name.Length)
-				);
+				SIZE_T len = (name.Length >= sizeof(pmod->BaseDllName) ? sizeof(pmod->BaseDllName) - 1 : name.Length);
+				RtlCopyMemory(pmod->BaseDllName, name.Buffer, len);
+				pmod->BaseDllName[len] = '\0';
 				RtlFreeAnsiString(&name);
 			}
 			tmpUnicodeStr.Buffer = (PWCH)ldrEntry32->FullDllName.Buffer;
 			tmpUnicodeStr.Length = ldrEntry32->FullDllName.Length;
 			tmpUnicodeStr.MaximumLength = ldrEntry32->FullDllName.MaximumLength;
 			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &tmpUnicodeStr, TRUE))) {
-				RtlCopyMemory(pmod->FullDllPath, name.Buffer,
-					(name.Length > sizeof pmod->FullDllPath ?
-						sizeof pmod->FullDllPath : name.Length)
-				);
+				SIZE_T len = (name.Length >= sizeof(pmod->FullDllPath) ? sizeof(pmod->FullDllPath) - 1 : name.Length);
+				RtlCopyMemory(pmod->FullDllPath, name.Buffer, len);
+				pmod->FullDllPath[len] = '\0';
 				RtlFreeAnsiString(&name);
 			}
 			pmod->DllBase = (PVOID)ldrEntry32->DllBase;
@@ -164,17 +162,15 @@ NTSTATUS GetModules(
 			PLDR_DATA_TABLE_ENTRY ldrEntry = CONTAINING_RECORD(listEntry, LDR_DATA_TABLE_ENTRY, InLoadOrderLinks);
 			ANSI_STRING name;
 			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &ldrEntry->BaseDllName, TRUE))) {
-				RtlCopyMemory(pmod->BaseDllName, name.Buffer,
-					(name.Length > sizeof pmod->BaseDllName ?
-						sizeof pmod->BaseDllName : name.Length)
-				);
+				SIZE_T len = (name.Length >= sizeof(pmod->BaseDllName) ? sizeof(pmod->BaseDllName) - 1 : name.Length);
+				RtlCopyMemory(pmod->BaseDllName, name.Buffer, len);
+				pmod->BaseDllName[len] = '\0';
 				RtlFreeAnsiString(&name);
 			}
 			if (NT_SUCCESS(RtlUnicodeStringToAnsiString(&name, &ldrEntry->FullDllName, TRUE))) {
-				RtlCopyMemory(pmod->FullDllPath, name.Buffer,
-					(name.Length > sizeof pmod->FullDllPath ?
-						sizeof pmod->FullDllPath : name.Length)
-				);
+				SIZE_T len = (name.Length >= sizeof(pmod->FullDllPath) ? sizeof(pmod->FullDllPath) - 1 : name.Length);
+				RtlCopyMemory(pmod->FullDllPath, name.Buffer, len);
+				pmod->FullDllPath[len] = '\0';
 				RtlFreeAnsiString(&name);
 			}
 			pmod->DllBase = ldrEntry->DllBase;
@@ -239,7 +235,7 @@ NTSTATUS KeWriteVirtualMemory(
 NTSTATUS KeProtectVirtualMemory(
 	IN HANDLE hProcess, IN PVOID addr,
 	IN SIZE_T siz, IN ULONG new_prot,
-	OUT ULONG *old_prot
+	OUT ULONG* old_prot
 )
 {
 	NTSTATUS status;
@@ -277,7 +273,7 @@ NTSTATUS KeRestoreProtectVirtualMemory(IN HANDLE hProcess,
 	return status;
 }
 
-NTSTATUS AllocMemoryToProcess(IN PEPROCESS pep, IN OUT PVOID *baseAddr, IN OUT SIZE_T *outSize, IN ULONG protect)
+NTSTATUS AllocMemoryToProcess(IN PEPROCESS pep, IN OUT PVOID* baseAddr, IN OUT SIZE_T* outSize, IN ULONG protect)
 {
 	NTSTATUS status;
 	PKAPC_STATE apc;
@@ -339,7 +335,7 @@ NTSTATUS WritePhysicalPage(IN PVOID addr, IN PUCHAR content, IN OUT PSIZE_T cont
 	return MmCopyMemory(vaddr, mm, 4096, MM_COPY_MEMORY_VIRTUAL, content_size_and_transferred);
 }
 
-NTSTATUS ReadPhysicalPage(IN PHYSICAL_ADDRESS * addr, OUT PUCHAR content, IN OUT PSIZE_T content_size_and_transferred)
+NTSTATUS ReadPhysicalPage(IN PHYSICAL_ADDRESS* addr, OUT PUCHAR content, IN OUT PSIZE_T content_size_and_transferred)
 {
 	MM_COPY_ADDRESS mm = { 0 };
 
@@ -348,7 +344,7 @@ NTSTATUS ReadPhysicalPage(IN PHYSICAL_ADDRESS * addr, OUT PUCHAR content, IN OUT
 		return STATUS_UNSUCCESSFUL;
 	}
 
-	mm.PhysicalAddress = *(PHYSICAL_ADDRESS *)addr;
+	mm.PhysicalAddress = *(PHYSICAL_ADDRESS*)addr;
 	return MmCopyMemory(content, mm, 4096, MM_COPY_MEMORY_PHYSICAL, content_size_and_transferred);
 }
 

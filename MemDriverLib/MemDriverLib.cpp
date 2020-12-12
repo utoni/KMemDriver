@@ -48,6 +48,34 @@ bool KInterface::Ping()
 	return srr == SRR_SIGNALED;
 }
 
+bool KInterface::Processes(std::vector<PROCESS_DATA>& dest)
+{
+	SendRecvReturn srr;
+	PKERNEL_PROCESSES_REQUEST processes = (PKERNEL_PROCESSES_REQUEST)getBuffer();
+	PPROCESS_DATA data = (PPROCESS_DATA)(processes + 1);
+
+	m_last_ntstatus = INVALID_NTSTATUS;
+	srr = SendRecvWait(MEM_PROCESSES);
+	if (srr == SRR_SIGNALED) {
+		m_last_ntstatus = processes->StatusRes;
+		if (validateResponeEx(processes, processes->StatusRes, processes->ProcessCount * sizeof(PROCESS_DATA)) == MEM_PROCESSES)
+		{
+			for (SIZE_T i = 0; i < processes->ProcessCount; ++i, ++data)
+			{
+				dest.push_back(*data);
+			}
+		}
+		else {
+			return false;
+		}
+	}
+	else {
+		return false;
+	}
+
+	return true;
+}
+
 bool KInterface::Pages(HANDLE targetPID,
 	std::vector<MEMORY_BASIC_INFORMATION>& dest,
 	PVOID start_address)
