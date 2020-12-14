@@ -15,6 +15,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "IntegrationTest", "Integrat
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CheatEngineServer", "CheatEngineServer\CheatEngineServer.vcxproj", "{B6441DA8-67E2-47E9-9A10-CD5C90173EAC}"
+	ProjectSection(ProjectDependencies) = postProject
+		{B6790A97-6995-46B6-AD73-AC5BC4AC76DB} = {B6790A97-6995-46B6-AD73-AC5BC4AC76DB}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

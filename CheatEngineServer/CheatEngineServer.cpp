@@ -7,6 +7,7 @@
 
 #include "CheatEngine.h"
 #include "CommandDispatcher.h"
+#include "KInterface.h"
 
 static SOCKET make_accept_sock(const char* servspec) {
 	const int one = 1;
@@ -83,6 +84,10 @@ int main()
 {
 	WSADATA wsaData;
 	DWORD iResult;
+	KInterface& ki = KInterface::getInstance();
+
+	ki.Init();
+	ki.Handshake();
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
