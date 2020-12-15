@@ -2,11 +2,13 @@
 
 #include "KMemDriver.h"
 
-#include <stdexcept>
-#include <vector>
 #include <Windows.h>
 
-#define DEFAULT_TIMEOUT 2500
+#include <mutex>
+#include <stdexcept>
+#include <vector>
+
+#define DEFAULT_TIMEOUT_MS ((KRNL_WAIT_TIME_US / 1000) * (KRNL_MAX_WAITS - 1))
 #define INVALID_NTSTATUS (UINT32)-1
 
 typedef enum SendRecvReturn {
@@ -43,21 +45,77 @@ public:
 	bool VFree(HANDLE targetPID, PVOID address, SIZE_T size);
 	bool VUnlink(HANDLE targetPID, PVOID address);
 
+	bool MtInit() {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Init();
+	}
+	bool MtHandshake() {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Handshake();
+	}
+	bool MtPing() {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Ping();
+	}
+	bool MtProcesses(std::vector<PROCESS_DATA>& dest) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Processes(dest);
+	}
+	bool MtPages(HANDLE targetPID, std::vector<MEMORY_BASIC_INFORMATION>& dest, PVOID start_address = NULL) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Pages(targetPID, dest, start_address);
+	}
+	bool MtModules(HANDLE targetPID, std::vector<MODULE_DATA>& dest) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Modules(targetPID, dest);
+	}
+	bool MtExit() {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return Exit();
+	}
+	bool MtRPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size, PKERNEL_READ_REQUEST result) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return RPM(targetPID, address, buf, size, result);
+	}
+	bool MtWPM(HANDLE targetPID, PVOID address, BYTE* buf, SIZE_T size, PKERNEL_WRITE_REQUEST result) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return WPM(targetPID, address, buf, size, result);
+	}
+	bool MtVAlloc(HANDLE targetPID, PVOID* address, SIZE_T* size, ULONG protection) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return VAlloc(targetPID, address, size, protection);
+	}
+	bool MtVFree(HANDLE targetPID, PVOID address, SIZE_T size) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return VFree(targetPID, address, size);
+	}
+	bool MtVUnlink(HANDLE targetPID, PVOID address) {
+		std::unique_lock<std::mutex> lck(m_jobLock);
+		return VUnlink(targetPID, address);
+	}
+
 	PVOID getBuffer();
 	HANDLE getKHandle();
 	HANDLE getUHandle();
 	UINT32 getLastPingValue();
 	UINT32 getLastNtStatus();
-	SendRecvReturn RecvWait(DWORD timeout = DEFAULT_TIMEOUT);
+
+	SendRecvReturn RecvWait(DWORD timeout = DEFAULT_TIMEOUT_MS);
+	void StartPingThread(void);
 
 private:
-	SendRecvReturn SendRecvWait(UINT32 type, DWORD timeout = DEFAULT_TIMEOUT);
+	SendRecvReturn SendRecvWait(UINT32 type, DWORD timeout = DEFAULT_TIMEOUT_MS);
+	void PingThread(void);
 
 	PVOID m_shmem = NULL;
 	HANDLE m_kevent = NULL, m_uevent = NULL;
 
 	UINT32 m_last_ping_value = 0;
 	UINT32 m_last_ntstatus = INVALID_NTSTATUS;
+
+	bool m_pingThreadStarted = false;
+	std::thread m_pingThread;
+	std::mutex m_jobLock;
 };
 
 class KMemory

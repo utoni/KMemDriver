@@ -18,6 +18,8 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define SHMEM_ADDR				0x60000000
 #define SHMEM_SIZE				8192*8*2
 #define INVALID_REQUEST			(UINT32)-1
+#define KRNL_MAX_WAITS			20
+#define KRNL_WAIT_TIME_US		1000000
 
 #define MEM_HANDSHAKE			0x800
 #define MEM_PING				0x801

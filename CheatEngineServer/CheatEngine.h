@@ -1,6 +1,9 @@
 #pragma once
 
+#include "KInterface.h"
 #include <winsock.h>
+
+#include <vector>
 
 #define CE_PORT "52736"
 #define MSG_WAITALL 0x8
@@ -84,9 +87,11 @@ typedef struct {
 
 class CEConnection {
 public:
-	explicit CEConnection(SOCKET s) : sock(s) {}
-	SOCKET getSocket(void) { return sock; }
-	void closeSocket(void) { closesocket(sock); }
+	explicit CEConnection(SOCKET s) : m_sock(s) {}
+	SOCKET getSocket(void) { return m_sock; }
+	void closeSocket(void) { closesocket(m_sock); }
+
+	std::vector<PROCESS_DATA> m_cachedProcesses;
 private:
-	SOCKET sock;
+	SOCKET m_sock;
 };

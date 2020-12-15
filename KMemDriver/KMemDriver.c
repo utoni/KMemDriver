@@ -8,6 +8,7 @@
 
 #define CHEAT_EXE L"kmem"
 #define WAIT_OBJECT_0 ((STATUS_WAIT_0 ) + 0 )
+#define SystemProcessInformation 0x05
 
 DRIVER_INITIALIZE DriverEntry;
 #pragma alloc_text(INIT, DriverEntry)
@@ -172,7 +173,7 @@ NTSTATUS GetProcesses(OUT PROCESS_DATA* procs, IN OUT SIZE_T* psiz)
 	SIZE_T const max_siz = *psiz;
 	ULONG mem_needed = 0;
 
-	NTSTATUS status = ZwQuerySystemInformation(0x05, NULL, 0, &mem_needed);
+	NTSTATUS status = ZwQuerySystemInformation(SystemProcessInformation, NULL, 0, &mem_needed);
 	if (!NT_SUCCESS(status) && mem_needed == 0) {
 		KDBG("NtQuerySystemInformation(ReturnLength: %lu) failed with 0x%X\n", mem_needed, status);
 		return status;
@@ -188,7 +189,7 @@ NTSTATUS GetProcesses(OUT PROCESS_DATA* procs, IN OUT SIZE_T* psiz)
 		return STATUS_NO_MEMORY;
 	}
 
-	status = ZwQuerySystemInformation(0x05, sysinfo, mem_needed, NULL);
+	status = ZwQuerySystemInformation(SystemProcessInformation, sysinfo, mem_needed, NULL);
 	if (!NT_SUCCESS(status)) {
 		KDBG("NtQuerySystemInformation(SystemInformationLength: %lu) failed with 0x%X\n", mem_needed, status);
 		goto free_memory;
@@ -231,16 +232,16 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess)
 	imageBase = NULL;
 	ctrlPID = NULL;
 
-	SYSTEM_PROCESS_INFORMATION* procs = MmAllocateNonCachedMemory(1024 * sizeof(*procs));
+	SYSTEM_PROCESS_INFORMATION* procs = MmAllocateNonCachedMemory((1024 + 128) * sizeof(*procs));
 	ULONG mem_needed = 0;
 
 	if (procs == NULL) {
 		return STATUS_MEMORY_NOT_ALLOCATED;
 	}
 	while (ctrlPID == NULL) {
-		status = ZwQuerySystemInformation(0x05, (PVOID)&procs[0], 1024 * sizeof(*procs), &mem_needed);
+		status = ZwQuerySystemInformation(SystemProcessInformation, (PVOID)&procs[0], (1024 + 128) * sizeof(*procs), &mem_needed);
 		if (!NT_SUCCESS(status)) {
-			KDBG("NtQuerySystemInformation failed with 0x%X\n", status);
+			KDBG("ZwQuerySystemInformation(%zu,%lu) failed with 0x%X\n", 1024 * sizeof(*procs), mem_needed, status);
 			return status;
 		}
 
@@ -448,7 +449,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 		INT running = 1;
 		SIZE_T maxWaits = 20;
 		do {
-			LARGE_INTEGER wait = { .QuadPart = -10000000 };
+			LARGE_INTEGER wait = { .QuadPart = -(KRNL_WAIT_TIME_US * 10) };
 			status = KeWaitForSingleObject(pk_kevent, Executive, UserMode, FALSE, &wait);
 			if (NT_SUCCESS(status) && status == WAIT_OBJECT_0) {
 				maxWaits = 20;
@@ -464,7 +465,7 @@ NTSTATUS KRThread(IN PVOID pArg)
 						break;
 					case MEM_PING: {
 						PKERNEL_PING ping = (PKERNEL_PING)shm_buf;
-						KDBG("Got a PING with rng 0x%X, sending PONG !\n",
+						KDBG("Got a PING with rng 0x%08X, sending PONG !\n",
 							ping->rnd_user);
 						ping->rnd_kern = ping->rnd_user;
 

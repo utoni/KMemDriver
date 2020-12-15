@@ -138,8 +138,8 @@ int main()
 	try {
 		KM_ASSERT_EQUAL(true, ki.Init(), "Kernel Interface Init");
 		KM_ASSERT_EQUAL(true, ki.Handshake(), "Kernel Interface Handshake");
-		KM_ASSERT_EQUAL(true, ki.getBuffer() != NULL, "Kernel Interface Buffer != NULL");
 		KM_ASSERT_EQUAL(true, ki.getKHandle() != ki.getUHandle() && ki.getKHandle() != NULL && ki.getUHandle() != NULL, "Kernel Interface Handles");
+		KM_ASSERT_EQUAL(true, ki.getBuffer() != NULL, "Kernel Interface Buffer != NULL");
 		KM_ASSERT_EQUAL(SRR_TIMEOUT, ki.RecvWait(), "Kernel Interface Receive Wait");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #1");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #2");

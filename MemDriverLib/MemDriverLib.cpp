@@ -154,6 +154,10 @@ bool KInterface::Modules(HANDLE targetPID,
 
 bool KInterface::Exit()
 {
+	if (m_pingThreadStarted == true) {
+		m_pingThreadStarted = false;
+		m_pingThread.join();
+	}
 	m_last_ntstatus = INVALID_NTSTATUS;
 	return SendRecvWait(MEM_EXIT, INFINITE) == SRR_SIGNALED;
 }
@@ -351,6 +355,20 @@ SendRecvReturn KInterface::RecvWait(DWORD timeout)
 		return SRR_TIMEOUT;
 	}
 	return SRR_ERR_UEVENT;
+}
+
+void KInterface::PingThread(void)
+{
+	while (m_pingThreadStarted == true) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TIMEOUT_MS));
+		MtPing();
+	}
+}
+
+void KInterface::StartPingThread(void)
+{
+	m_pingThreadStarted = true;
+	m_pingThread = std::move(std::thread(&KInterface::PingThread, this));
 }
 
 #pragma warning(pop)

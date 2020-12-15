@@ -5,11 +5,11 @@
 #include <iostream>
 
 
-static int recvall(SOCKET s, void *buf, int size, int flags)
+static int recvall(SOCKET s, void* buf, int size, int flags)
 {
 	int totalreceived = 0;
 	int sizeleft = size;
-	char *buffer = (char*)buf;
+	char* buffer = (char*)buf;
 
 	flags = flags | MSG_WAITALL;
 	while (sizeleft > 0)
@@ -40,11 +40,11 @@ static int recvall(SOCKET s, void *buf, int size, int flags)
 	return totalreceived;
 }
 
-static int sendall(SOCKET s, void *buf, int size, int flags)
+static int sendall(SOCKET s, void* buf, int size, int flags)
 {
 	int totalsent = 0;
 	int sizeleft = size;
-	char *buffer = (char*)buf;
+	char* buffer = (char*)buf;
 
 	while (sizeleft > 0)
 	{
@@ -72,7 +72,7 @@ static int sendall(SOCKET s, void *buf, int size, int flags)
 	return totalsent;
 }
 
-int DispatchCommand(CEConnection & con, char command)
+int DispatchCommand(CEConnection& con, char command)
 {
 	enum ce_command cmd = (enum ce_command)command;
 
@@ -86,29 +86,89 @@ int DispatchCommand(CEConnection & con, char command)
 		break;
 	case CMD_TERMINATESERVER:
 		break;
-	case CMD_OPENPROCESS:
+	case CMD_OPENPROCESS: {
+		int pid = 0;
+
+		if (recvall(con.getSocket(), &pid, sizeof(pid), MSG_WAITALL) > 0)
+		{
+			if (sendall(con.getSocket(), &pid, sizeof(pid), 0) > 0) {
+				return 0;
+			}
+		}
 		break;
+	}
+
 	case CMD_CREATETOOLHELP32SNAPSHOT: {
-		HANDLE result = (HANDLE)((ULONG_PTR)0x1);
+		UINT32 result = 0x1;
 		CeCreateToolhelp32Snapshot params;
 
 		if (recvall(con.getSocket(), &params, sizeof(CeCreateToolhelp32Snapshot), MSG_WAITALL) > 0)
 		{
+#if 0
 			std::cout << "Calling CreateToolhelp32Snapshot with flags 0x" << std::hex << params.dwFlags
 				<< " for PID 0x" << std::hex << params.th32ProcessID << std::endl;
+#endif
+			if (sendall(con.getSocket(), &result, sizeof(result), 0) > 0)
+			{
+				return 0;
+			}
 		}
-		if (sendall(con.getSocket(), &result, sizeof(result), 0) == sizeof(result))
+		break;
+	}
+
+	case CMD_PROCESS32FIRST:
+		con.m_cachedProcesses.clear();
+		KInterface::getInstance().MtProcesses(con.m_cachedProcesses);
+	case CMD_PROCESS32NEXT: {
+		UINT32 toolhelpsnapshot;
+
+		if (recvall(con.getSocket(), &toolhelpsnapshot, sizeof(toolhelpsnapshot), MSG_WAITALL) > 0)
 		{
+			if (con.m_cachedProcesses.size() > 0) {
+				PROCESS_DATA pd = con.m_cachedProcesses[0];
+				int imageNameLen = (int)strnlen(pd.ImageName, sizeof(pd.ImageName));
+				CeProcessEntry* pcpe = (CeProcessEntry*)malloc(sizeof(*pcpe) + imageNameLen);
+
+				con.m_cachedProcesses.erase(con.m_cachedProcesses.begin());
+				if (pcpe == NULL) {
+					return 1;
+				}
+				pcpe->pid = (int)((ULONG_PTR)pd.UniqueProcessId);
+				pcpe->processnamesize = imageNameLen;
+				memcpy(((BYTE*)pcpe) + sizeof(*pcpe), pd.ImageName, imageNameLen);
+				pcpe->result = 1;
+				if (sendall(con.getSocket(), pcpe, sizeof(*pcpe) + imageNameLen, 0) > 0)
+				{
+					free(pcpe);
+					return 0;
+				}
+				free(pcpe);
+			}
+			else {
+				CeProcessEntry cpe;
+				cpe.pid = 0;
+				cpe.processnamesize = 0;
+				cpe.result = 0;
+				if (sendall(con.getSocket(), &cpe, sizeof(cpe), 0) > 0)
+				{
+					return 0;
+				}
+			}
+		}
+		break;
+	}
+
+	case CMD_CLOSEHANDLE: {
+		UINT32 handle;
+		if (recvall(con.getSocket(), &handle, sizeof(handle), MSG_WAITALL) > 0)
+		{
+			UINT32 r = 1;
+			sendall(con.getSocket(), &r, sizeof(r), 0);
 			return 0;
 		}
 		break;
 	}
-	case CMD_PROCESS32FIRST:
-		break;
-	case CMD_PROCESS32NEXT:
-		break;
-	case CMD_CLOSEHANDLE:
-		break;
+
 	case CMD_VIRTUALQUERYEX:
 		break;
 	case CMD_READPROCESSMEMORY:
@@ -135,8 +195,24 @@ int DispatchCommand(CEConnection & con, char command)
 		break;
 	case CMD_SETTHREADCONTEXT:
 		break;
-	case CMD_GETARCHITECTURE:
-		break;
+	case CMD_GETARCHITECTURE: {
+		unsigned char arch;
+#ifdef __i386__
+		arch = 0;
+#endif
+#ifdef __x86_64__
+		arch = 1;
+#endif
+#ifdef __arm__
+		arch = 2;
+#endif
+#ifdef __aarch64__
+		arch = 3;
+#endif
+		sendall(con.getSocket(), &arch, sizeof(arch), 0);
+		return 0;
+	}
+
 	case CMD_MODULE32FIRST:
 		break;
 	case CMD_MODULE32NEXT:
@@ -168,7 +244,7 @@ int DispatchCommand(CEConnection & con, char command)
 	return 1;
 }
 
-int CheckForAndDispatchCommand(CEConnection & con)
+int CheckForAndDispatchCommand(CEConnection& con)
 {
 	int r;
 	char command;

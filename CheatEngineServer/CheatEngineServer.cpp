@@ -7,7 +7,6 @@
 
 #include "CheatEngine.h"
 #include "CommandDispatcher.h"
-#include "KInterface.h"
 
 static SOCKET make_accept_sock(const char* servspec) {
 	const int one = 1;
@@ -74,9 +73,8 @@ static void accept_loop(const char* servspec) {
 
 	for (;;) {
 		SOCKET new_sock = accept(sock, 0, 0);
-		new_connection(new_sock);
-		//std::thread t(new_connection, new_sock);
-		//t.detach();
+		std::thread t(new_connection, new_sock);
+		t.detach();
 	}
 }
 
@@ -86,8 +84,15 @@ int main()
 	DWORD iResult;
 	KInterface& ki = KInterface::getInstance();
 
-	ki.Init();
-	ki.Handshake();
+	std::cout << "KMemDriver Init/Handshake.";
+	if (ki.Init() == false || ki.Handshake() == false) {
+		std::cout << " Failed. [PRESS RETURN TO EXIT]" << std::endl;
+		getchar();
+		return 1;
+	}
+	std::cout << " Ok." << std::endl;
+
+	ki.StartPingThread();
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
