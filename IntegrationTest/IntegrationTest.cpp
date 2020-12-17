@@ -128,6 +128,45 @@ error:
 	return false;
 }
 
+static bool test_MemoryReadWrite(KInterface& ki, HANDLE pid)
+{
+	KERNEL_READ_REQUEST krr;
+	KERNEL_WRITE_REQUEST kwr;
+
+	uint8_t redzone0[16];
+	uint8_t buffer[128];
+	uint8_t redzone1[16];
+	uint8_t test_buffer[sizeof(buffer)];
+	uint8_t redzone2[16];
+
+	memset(&krr, 0, sizeof(krr));
+	memset(&kwr, 0, sizeof(kwr));
+
+	memset(redzone0, 0xFF, sizeof(redzone0));
+	memset(redzone1, 0xFF, sizeof(redzone1));
+	memset(redzone2, 0xFF, sizeof(redzone2));
+
+	memset(buffer, 0x41, sizeof(buffer));
+	memset(test_buffer, 0, sizeof(test_buffer));
+	KM_ASSERT_EQUAL(true, ki.RPM(pid, buffer, test_buffer, sizeof(buffer), &krr) &&
+		krr.SizeReq == krr.SizeRes && krr.StatusRes == 0, "Kernel RPM stack memory");
+	KM_ASSERT_EQUAL(0, memcmp(buffer, test_buffer, sizeof(buffer)), "Kernel RPM stack memory equal");
+	KM_ASSERT_EQUAL(true, memcmp(redzone0, redzone1, sizeof(redzone0)) == 0 &&
+		memcmp(redzone0, redzone2, sizeof(redzone0)) == 0, "Kernel RPM redzones check");
+
+	memset(buffer, 0x42, sizeof(buffer));
+	memset(test_buffer, 0, sizeof(test_buffer));
+	KM_ASSERT_EQUAL(true, ki.WPM(pid, test_buffer, buffer, sizeof(buffer), &kwr) &&
+		kwr.SizeReq == kwr.SizeRes && kwr.StatusRes == 0, "Kernel WPM stack memory");
+	KM_ASSERT_EQUAL(0, memcmp(buffer, test_buffer, sizeof(buffer)), "Kernel WPM stack memory equal");
+	KM_ASSERT_EQUAL(true, memcmp(redzone0, redzone1, sizeof(redzone0)) == 0 &&
+		memcmp(redzone0, redzone2, sizeof(redzone0)) == 0, "Kernel WPM redzones check");
+
+	return true;
+error:
+	return false;
+}
+
 int main()
 {
 	HANDLE this_pid = (HANDLE)((ULONG_PTR)GetCurrentProcessId());
@@ -140,7 +179,7 @@ int main()
 		KM_ASSERT_EQUAL(true, ki.Handshake(), "Kernel Interface Handshake");
 		KM_ASSERT_EQUAL(true, ki.getKHandle() != ki.getUHandle() && ki.getKHandle() != NULL && ki.getUHandle() != NULL, "Kernel Interface Handles");
 		KM_ASSERT_EQUAL(true, ki.getBuffer() != NULL, "Kernel Interface Buffer != NULL");
-		KM_ASSERT_EQUAL(SRR_TIMEOUT, ki.RecvWait(), "Kernel Interface Receive Wait");
+		KM_ASSERT_EQUAL(SRR_TIMEOUT, ki.RecvWait(1000), "Kernel Interface Receive Wait");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #1");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #2");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #3");
@@ -148,6 +187,7 @@ int main()
 		KM_TEST_SUITE(test_Modules(ki, this_pid), "Modules");
 		KM_TEST_SUITE(test_Pages(ki, this_pid), "Pages");
 		KM_TEST_SUITE(test_VirtualMemory(ki, this_pid), "VirtualMemory");
+		KM_TEST_SUITE(test_MemoryReadWrite(ki, this_pid), "MemoryReadWrite");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #4");
 		KM_ASSERT_EQUAL(true, ki.Exit(), "Kernel Interface Driver Shutdown");
 	}
