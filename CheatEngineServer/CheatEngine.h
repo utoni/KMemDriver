@@ -83,6 +83,35 @@ typedef struct {
 	int processnamesize;
 	//processname
 } CeProcessEntry, * PCeProcessEntry;
+
+typedef struct {
+	int result;
+	int64_t modulebase;
+	int modulesize;
+	int modulenamesize;
+	//modulename
+} CeModuleEntry, * PCeModuleEntry;
+
+typedef struct {
+	uint32_t handle;
+	uint64_t address;
+	uint32_t size;
+	uint8_t  compress;
+} CeReadProcessMemoryInput, * PCeReadProcessMemoryInput;
+
+typedef struct {
+	int read;
+} CeReadProcessMemoryOutput, * PCeReadProcessMemoryOutput;
+
+typedef struct {
+	int32_t handle;
+	int64_t address;
+	int32_t size;
+} CeWriteProcessMemoryInput, * PCeWriteProcessMemoryInput;
+
+typedef struct {
+	int32_t written;
+} CeWriteProcessMemoryOutput, * PCeWriteProcessMemoryOutput;
 #pragma pack()
 
 class CEConnection {
@@ -92,6 +121,7 @@ public:
 	void closeSocket(void) { closesocket(m_sock); }
 
 	std::vector<PROCESS_DATA> m_cachedProcesses;
+	std::vector<MODULE_DATA> m_cachedModules;
 private:
 	SOCKET m_sock;
 };

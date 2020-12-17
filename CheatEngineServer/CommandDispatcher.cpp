@@ -4,6 +4,8 @@
 
 #include <iostream>
 
+#define SPECIAL_TOOLHELP_SNAPSHOT_PROCESS 0x02
+#define SPECIAL_TOOLHELP_SNAPSHOT_PROCESS_HANDLE 0x01;
 
 static int recvall(SOCKET s, void* buf, int size, int flags)
 {
@@ -76,7 +78,7 @@ int DispatchCommand(CEConnection& con, char command)
 {
 	enum ce_command cmd = (enum ce_command)command;
 
-	std::cout << "Command: " << ce_command_to_string(cmd) << std::endl;
+	//std::cout << "Command: " << ce_command_to_string(cmd) << std::endl;
 
 	switch (cmd)
 	{
@@ -91,6 +93,7 @@ int DispatchCommand(CEConnection& con, char command)
 
 		if (recvall(con.getSocket(), &pid, sizeof(pid), MSG_WAITALL) > 0)
 		{
+			//std::wcout << "OpenProcess for PID " << (HANDLE)pid << std::endl;
 			if (sendall(con.getSocket(), &pid, sizeof(pid), 0) > 0) {
 				return 0;
 			}
@@ -99,15 +102,21 @@ int DispatchCommand(CEConnection& con, char command)
 	}
 
 	case CMD_CREATETOOLHELP32SNAPSHOT: {
-		UINT32 result = 0x1;
+		UINT32 result;
 		CeCreateToolhelp32Snapshot params;
 
 		if (recvall(con.getSocket(), &params, sizeof(CeCreateToolhelp32Snapshot), MSG_WAITALL) > 0)
 		{
-#if 0
+#if 1
 			std::cout << "Calling CreateToolhelp32Snapshot with flags 0x" << std::hex << params.dwFlags
 				<< " for PID 0x" << std::hex << params.th32ProcessID << std::endl;
 #endif
+			if (params.dwFlags == SPECIAL_TOOLHELP_SNAPSHOT_PROCESS) {
+				result = SPECIAL_TOOLHELP_SNAPSHOT_PROCESS_HANDLE;
+			}
+			else {
+				result = params.th32ProcessID;
+			}
 			if (sendall(con.getSocket(), &result, sizeof(result), 0) > 0)
 			{
 				return 0;
@@ -118,7 +127,9 @@ int DispatchCommand(CEConnection& con, char command)
 
 	case CMD_PROCESS32FIRST:
 		con.m_cachedProcesses.clear();
-		KInterface::getInstance().MtProcesses(con.m_cachedProcesses);
+		if (KInterface::getInstance().MtProcesses(con.m_cachedProcesses) != true) {
+			return 1;
+		}
 	case CMD_PROCESS32NEXT: {
 		UINT32 toolhelpsnapshot;
 
@@ -129,14 +140,14 @@ int DispatchCommand(CEConnection& con, char command)
 				int imageNameLen = (int)strnlen(pd.ImageName, sizeof(pd.ImageName));
 				CeProcessEntry* pcpe = (CeProcessEntry*)malloc(sizeof(*pcpe) + imageNameLen);
 
-				con.m_cachedProcesses.erase(con.m_cachedProcesses.begin());
 				if (pcpe == NULL) {
 					return 1;
 				}
+				con.m_cachedProcesses.erase(con.m_cachedProcesses.begin());
 				pcpe->pid = (int)((ULONG_PTR)pd.UniqueProcessId);
 				pcpe->processnamesize = imageNameLen;
-				memcpy(((BYTE*)pcpe) + sizeof(*pcpe), pd.ImageName, imageNameLen);
 				pcpe->result = 1;
+				memcpy(((BYTE*)pcpe) + sizeof(*pcpe), pd.ImageName, imageNameLen);
 				if (sendall(con.getSocket(), pcpe, sizeof(*pcpe) + imageNameLen, 0) > 0)
 				{
 					free(pcpe);
@@ -171,10 +182,42 @@ int DispatchCommand(CEConnection& con, char command)
 
 	case CMD_VIRTUALQUERYEX:
 		break;
-	case CMD_READPROCESSMEMORY:
+
+	case CMD_READPROCESSMEMORY: {
+		CeReadProcessMemoryInput params;
+		PCeReadProcessMemoryOutput out;
+		KERNEL_READ_REQUEST krr;
+
+		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
+			if (params.compress != 0) {
+				return 1;
+			}
+			out = (PCeReadProcessMemoryOutput)malloc(sizeof(*out) + params.size);
+			if (out == NULL) {
+				return 1;
+			}
+			if (KInterface::getInstance().MtRPM((HANDLE)((ULONG_PTR)params.handle), (PVOID)params.address, (BYTE*)out + sizeof(*out), params.size, &krr) != true) {
+				free(out);
+				return 1;
+			}
+			if (params.size != krr.SizeReq || params.size != krr.SizeRes || krr.StatusRes != 0) {
+				free(out);
+				return 1;
+			}
+			if (sendall(con.getSocket(), out, sizeof(*out) + params.size, 0) > 0)
+			{
+				free(out);
+				return 0;
+			}
+			free(out);
+		}
 		break;
-	case CMD_WRITEPROCESSMEMORY:
+	}
+
+	case CMD_WRITEPROCESSMEMORY: {
 		break;
+	}
+
 	case CMD_STARTDEBUG:
 		break;
 	case CMD_STOPDEBUG:
@@ -214,11 +257,56 @@ int DispatchCommand(CEConnection& con, char command)
 	}
 
 	case CMD_MODULE32FIRST:
+	case CMD_MODULE32NEXT: {
+		UINT32 toolhelpsnapshot;
+		if (recvall(con.getSocket(), &toolhelpsnapshot, sizeof(toolhelpsnapshot), MSG_WAITALL) > 0)
+		{
+			if (cmd == CMD_MODULE32FIRST) {
+				con.m_cachedModules.clear();
+				//std::wcout << "Modules for PID " << (HANDLE)toolhelpsnapshot << std::endl;
+				if (KInterface::getInstance().MtModules((HANDLE)((ULONG_PTR)toolhelpsnapshot), con.m_cachedModules) != true) {
+					return 1;
+				}
+			}
+			if (con.m_cachedModules.size() > 0) {
+				MODULE_DATA md = con.m_cachedModules[0];
+				int imageNameLen = (int)strnlen(md.BaseDllName, sizeof(md.BaseDllName));
+				CeModuleEntry* pcme = (CeModuleEntry*)malloc(sizeof(*pcme) + imageNameLen);
+
+				if (pcme == NULL) {
+					return 1;
+				}
+				con.m_cachedModules.erase(con.m_cachedModules.begin());
+				pcme->modulebase = (INT64)md.DllBase;
+				pcme->modulesize = md.SizeOfImage;
+				pcme->modulenamesize = imageNameLen;
+				pcme->result = 1;
+				memcpy(((BYTE*)pcme) + sizeof(*pcme), md.BaseDllName, imageNameLen);
+				if (sendall(con.getSocket(), pcme, sizeof(*pcme) + imageNameLen, 0) > 0)
+				{
+					free(pcme);
+					return 0;
+				}
+				free(pcme);
+			}
+			else {
+				CeModuleEntry cme;
+				cme.modulebase = 0;
+				cme.modulesize = 0;
+				cme.modulenamesize = 0;
+				cme.result = 0;
+				if (sendall(con.getSocket(), &cme, sizeof(cme), 0) > 0)
+				{
+					return 0;
+				}
+			}
+		}
 		break;
-	case CMD_MODULE32NEXT:
-		break;
+	}
+
 	case CMD_GETSYMBOLLISTFROMFILE:
-		break;
+		return 0;
+
 	case CMD_LOADEXTENSION:
 		break;
 	case CMD_ALLOC:
@@ -231,16 +319,18 @@ int DispatchCommand(CEConnection& con, char command)
 		break;
 	case CMD_SPEEDHACK_SETSPEED:
 		break;
+
 	case CMD_VIRTUALQUERYEXFULL:
-		break;
 	case CMD_GETREGIONINFO:
 		break;
+
 	case CMD_AOBSCAN:
 		break;
 	case CMD_COMMANDLIST2:
 		break;
 	}
 
+	std::cout << "Unhandled command: " << ce_command_to_string(cmd) << std::endl;
 	return 1;
 }
 
