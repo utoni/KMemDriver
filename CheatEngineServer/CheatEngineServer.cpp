@@ -8,6 +8,9 @@
 #include "CheatEngine.h"
 #include "CommandDispatcher.h"
 
+static SOCKET sock;
+static BOOL run_main_loop = TRUE;
+
 static SOCKET make_accept_sock(const char* servspec) {
 	const int one = 1;
 	struct addrinfo hints = {};
@@ -63,19 +66,31 @@ static void new_connection(SOCKET sock) {
 	}
 }
 
-static void accept_loop(const char* servspec) {
-	SOCKET sock = make_accept_sock(servspec);
+static int accept_loop(const char* servspec) {
+	sock = make_accept_sock(servspec);
 
 	if (sock == NULL)
 	{
-		return;
+		return 1;
 	}
 
-	for (;;) {
+	while (run_main_loop == TRUE) {
 		SOCKET new_sock = accept(sock, 0, 0);
-		std::thread t(new_connection, new_sock);
-		t.detach();
+		if (new_sock != NULL) {
+			std::thread t(new_connection, new_sock);
+			t.detach();
+		}
+		else {
+			return 1;
+		}
 	}
+	return 0;
+}
+
+static void onPingThreadTimeout(void) {
+	std::cout << "PingThread timeout, abort .." << std::endl;
+	run_main_loop = FALSE;
+	closesocket(sock);
 }
 
 int main()
@@ -92,7 +107,7 @@ int main()
 	}
 	std::cout << " Ok." << std::endl;
 
-	ki.StartPingThread();
+	ki.StartPingThread(onPingThreadTimeout);
 
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
@@ -100,5 +115,5 @@ int main()
 		return 1;
 	}
 
-	accept_loop("0.0.0.0");
+	return accept_loop("0.0.0.0");
 }

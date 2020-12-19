@@ -357,18 +357,22 @@ SendRecvReturn KInterface::RecvWait(DWORD timeout)
 	return SRR_ERR_UEVENT;
 }
 
-void KInterface::PingThread(void)
+void KInterface::PingThread(void(__cdecl* onTimeout)(void))
 {
 	while (m_pingThreadStarted == true) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(DEFAULT_TIMEOUT_MS));
-		MtPing();
+		if (MtPing() != true) {
+			m_pingThreadStarted = false;
+			break;
+		}
 	}
+	onTimeout();
 }
 
-void KInterface::StartPingThread(void)
+void KInterface::StartPingThread(void(__cdecl* onTimeout)(void))
 {
 	m_pingThreadStarted = true;
-	m_pingThread = std::move(std::thread(&KInterface::PingThread, this));
+	m_pingThread = std::move(std::thread(&KInterface::PingThread, this, onTimeout));
 }
 
 #pragma warning(pop)

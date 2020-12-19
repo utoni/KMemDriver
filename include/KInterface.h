@@ -101,11 +101,11 @@ public:
 	UINT32 getLastNtStatus();
 
 	SendRecvReturn RecvWait(DWORD timeout = DEFAULT_TIMEOUT_MS);
-	void StartPingThread(void);
+	void StartPingThread(void (__cdecl *onTimeout)(void));
 
 private:
 	SendRecvReturn SendRecvWait(UINT32 type, DWORD timeout = DEFAULT_TIMEOUT_MS);
-	void PingThread(void);
+	void PingThread(void (__cdecl *onTimeout)(void));
 
 	PVOID m_shmem = NULL;
 	HANDLE m_kevent = NULL, m_uevent = NULL;
