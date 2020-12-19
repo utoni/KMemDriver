@@ -7,6 +7,8 @@
 #define SPECIAL_TOOLHELP_SNAPSHOT_PROCESS 0x02
 #define SPECIAL_TOOLHELP_SNAPSHOT_PROCESS_HANDLE 0x01;
 
+static char const versionstring[] = "CHEATENGINE Network 2.0";
+
 static int recvall(SOCKET s, void* buf, int size, int flags)
 {
 	int totalreceived = 0;
@@ -19,20 +21,20 @@ static int recvall(SOCKET s, void* buf, int size, int flags)
 		int i = recv(s, &buffer[totalreceived], sizeleft, flags);
 		if (i == 0)
 		{
-			std::cout << "recv returned 0" << std::endl;
+			std::wcout << "recv returned 0" << std::endl;
 			return i;
 		}
 		if (i <= -1)
 		{
-			std::cout << "recv returned -1" << std::endl;
+			std::wcout << "recv returned -1" << std::endl;
 			if (errno == EINTR)
 			{
-				std::cout << "errno = EINTR\n" << std::endl;
+				std::wcout << "errno = EINTR\n" << std::endl;
 				i = 0;
 			}
 			else
 			{
-				std::cout << "Error during recvall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
+				std::wcout << "Error during recvall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
 				return i; //read error, or disconnected
 			}
 		}
@@ -62,7 +64,7 @@ static int sendall(SOCKET s, void* buf, int size, int flags)
 				i = 0;
 			else
 			{
-				std::cout << "Error during sendall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
+				std::wcout << "Error during sendall: " << (int)i << ". errno=" << errno << "\n" << std::endl;
 				return i;
 			}
 		}
@@ -78,16 +80,27 @@ int DispatchCommand(CEConnection& con, char command)
 {
 	enum ce_command cmd = (enum ce_command)command;
 
-	//std::cout << "Command: " << ce_command_to_string(cmd) << std::endl;
+	//std::wcout << "Command: " << ce_command_to_string(cmd) << std::endl;
 
 	switch (cmd)
 	{
-	case CMD_GETVERSION:
-		break;
+	case CMD_GETVERSION: {
+		PCeVersion v;
+		int versionsize = (int)strlen(versionstring);
+		v = (PCeVersion)malloc(sizeof(CeVersion) + versionsize);
+		v->stringsize = versionsize;
+		v->version = 1;
+		memcpy((char*)v + sizeof(CeVersion), versionstring, versionsize);
+		sendall(con.getSocket(), v, sizeof(CeVersion) + versionsize, 0);
+		free(v);
+		return 0;
+	}
+
 	case CMD_CLOSECONNECTION:
 		break;
 	case CMD_TERMINATESERVER:
 		break;
+
 	case CMD_OPENPROCESS: {
 		int pid = 0;
 
@@ -107,10 +120,8 @@ int DispatchCommand(CEConnection& con, char command)
 
 		if (recvall(con.getSocket(), &params, sizeof(CeCreateToolhelp32Snapshot), MSG_WAITALL) > 0)
 		{
-#if 1
-			std::cout << "Calling CreateToolhelp32Snapshot with flags 0x" << std::hex << params.dwFlags
-				<< " for PID 0x" << std::hex << params.th32ProcessID << std::endl;
-#endif
+			//std::wcout << "Calling CreateToolhelp32Snapshot with flags 0x" << std::hex << params.dwFlags
+				//<< " for PID 0x" << std::hex << params.th32ProcessID << std::endl;
 			if (params.dwFlags == SPECIAL_TOOLHELP_SNAPSHOT_PROCESS) {
 				result = SPECIAL_TOOLHELP_SNAPSHOT_PROCESS_HANDLE;
 			}
@@ -174,14 +185,12 @@ int DispatchCommand(CEConnection& con, char command)
 		if (recvall(con.getSocket(), &handle, sizeof(handle), MSG_WAITALL) > 0)
 		{
 			UINT32 r = 1;
-			sendall(con.getSocket(), &r, sizeof(r), 0);
-			return 0;
+			if (sendall(con.getSocket(), &r, sizeof(r), 0) > 0) {
+				return 0;
+			}
 		}
 		break;
 	}
-
-	case CMD_VIRTUALQUERYEX:
-		break;
 
 	case CMD_READPROCESSMEMORY: {
 		CeReadProcessMemoryInput params;
@@ -238,6 +247,7 @@ int DispatchCommand(CEConnection& con, char command)
 		break;
 	case CMD_SETTHREADCONTEXT:
 		break;
+
 	case CMD_GETARCHITECTURE: {
 		unsigned char arch;
 #ifdef __i386__
@@ -252,8 +262,9 @@ int DispatchCommand(CEConnection& con, char command)
 #ifdef __aarch64__
 		arch = 3;
 #endif
-		sendall(con.getSocket(), &arch, sizeof(arch), 0);
-		return 0;
+		if (sendall(con.getSocket(), &arch, sizeof(arch), 0) > 0) {
+			return 0;
+		}
 	}
 
 	case CMD_MODULE32FIRST:
@@ -263,10 +274,13 @@ int DispatchCommand(CEConnection& con, char command)
 		{
 			if (cmd == CMD_MODULE32FIRST) {
 				con.m_cachedModules.clear();
-				//std::wcout << "Modules for PID " << (HANDLE)toolhelpsnapshot << std::endl;
+				//std::wcout << "Modules for PID 0x" << std::hex << toolhelpsnapshot << std::endl;
 				if (KInterface::getInstance().MtModules((HANDLE)((ULONG_PTR)toolhelpsnapshot), con.m_cachedModules) != true) {
 					return 1;
 				}
+			}
+			else {
+				//std::wcout << "Modules NEXT for PID 0x" << std::hex << toolhelpsnapshot << std::endl;
 			}
 			if (con.m_cachedModules.size() > 0) {
 				MODULE_DATA md = con.m_cachedModules[0];
@@ -304,8 +318,23 @@ int DispatchCommand(CEConnection& con, char command)
 		break;
 	}
 
-	case CMD_GETSYMBOLLISTFROMFILE:
-		return 0;
+	case CMD_GETSYMBOLLISTFROMFILE: {
+		UINT32 symbolpathsize;
+		if (recvall(con.getSocket(), &symbolpathsize, sizeof(symbolpathsize), MSG_WAITALL) > 0)
+		{
+			char* symbolpath = (char*)malloc((SIZE_T)symbolpathsize + 1);
+			symbolpath[symbolpathsize] = '\0';
+			if (recvall(con.getSocket(), symbolpath, symbolpathsize, MSG_WAITALL) > 0)
+			{
+				//std::wcout << "Symbolpath: " << symbolpath << std::endl;
+				UINT64 fail = 0;
+				if (sendall(con.getSocket(), &fail, sizeof(fail), 0) > 0) {
+					return 0;
+				}
+			}
+		}
+		break;
+	}
 
 	case CMD_LOADEXTENSION:
 		break;
@@ -320,9 +349,56 @@ int DispatchCommand(CEConnection& con, char command)
 	case CMD_SPEEDHACK_SETSPEED:
 		break;
 
-	case CMD_VIRTUALQUERYEXFULL:
-	case CMD_GETREGIONINFO:
+	case CMD_VIRTUALQUERYEXFULL: {
+		CeVirtualQueryExFullInput params;
+		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
+			con.m_cachedPages.clear();
+			if (KInterface::getInstance().MtPages((HANDLE)((ULONG_PTR)params.handle), con.m_cachedPages) != true) {
+				return 1;
+			}
+			UINT32 count = (UINT32)con.m_cachedPages.size();
+			sendall(con.getSocket(), &count, sizeof(count), 0);
+			for (auto& page : con.m_cachedPages) {
+				RegionInfo out;
+				out.baseaddress = (UINT64)page.BaseAddress;
+				out.protection = page.Protect;
+				out.size = page.RegionSize;
+				out.type = page.Type;
+				sendall(con.getSocket(), &out, sizeof(out), 0);
+			}
+			return 0;
+		}
 		break;
+	}
+
+	case CMD_VIRTUALQUERYEX:
+	case CMD_GETREGIONINFO: {
+		CeVirtualQueryExInput params;
+		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
+			con.m_cachedPages.clear();
+			if (KInterface::getInstance().MtPages((HANDLE)((ULONG_PTR)params.handle), con.m_cachedPages, (PVOID)params.baseaddress) != true) {
+				return 1;
+			}
+			if (con.m_cachedPages.size() > 0) {
+				return 1;
+			}
+			CeVirtualQueryExOutput out;
+			out.baseaddress = (UINT64)con.m_cachedPages[0].BaseAddress;
+			out.protection = con.m_cachedPages[0].Protect;
+			out.size = con.m_cachedPages[0].RegionSize;
+			out.type = con.m_cachedPages[0].Type;
+			out.result = 1;
+			if (sendall(con.getSocket(), &out, sizeof(out), 0) > 0) {
+				if (cmd == CMD_GETREGIONINFO) {
+					uint8_t size = 0;
+					if (sendall(con.getSocket(), &size, sizeof(size), 0) > 0) {
+						return 0;
+					}
+				}
+			}
+		}
+		break;
+	}
 
 	case CMD_AOBSCAN:
 		break;
@@ -330,7 +406,7 @@ int DispatchCommand(CEConnection& con, char command)
 		break;
 	}
 
-	std::cout << "Unhandled command: " << ce_command_to_string(cmd) << std::endl;
+	std::wcout << "Unhandled command: " << ce_command_to_string(cmd) << std::endl;
 	return 1;
 }
 
@@ -343,6 +419,9 @@ int CheckForAndDispatchCommand(CEConnection& con)
 	if (r == 1)
 	{
 		return DispatchCommand(con, command);
+	}
+	else {
+		return 1;
 	}
 
 	return 0;

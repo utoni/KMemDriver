@@ -56,7 +56,7 @@ static SOCKET make_accept_sock(const char* servspec) {
 static void new_connection(SOCKET sock) {
 	CEConnection cec(sock);
 	std::cout << "New connection .." << std::endl;
-	while (1) {
+	while (run_main_loop == TRUE) {
 		if (CheckForAndDispatchCommand(cec) != 0)
 		{
 			std::cout << "Closing connection .." << std::endl;

@@ -73,6 +73,12 @@ static inline char const* ce_command_to_string(enum ce_command cmd)
 
 #pragma pack(1)
 typedef struct {
+	int version;
+	unsigned char stringsize;
+	//append the versionstring
+} CeVersion, * PCeVersion;
+
+typedef struct {
 	DWORD dwFlags;
 	DWORD th32ProcessID;
 } CeCreateToolhelp32Snapshot, * PCeCreateToolhelp32Snapshot;
@@ -112,6 +118,31 @@ typedef struct {
 typedef struct {
 	int32_t written;
 } CeWriteProcessMemoryOutput, * PCeWriteProcessMemoryOutput;
+
+typedef struct {
+	int handle;
+	uint64_t baseaddress;
+} CeVirtualQueryExInput, * PCeVirtualQueryExInput;
+
+typedef struct {
+	uint8_t result;
+	uint32_t protection;
+	uint32_t type;
+	uint64_t baseaddress;
+	uint64_t size;
+} CeVirtualQueryExOutput, * PCeVirtualQueryExOutput;
+
+typedef struct {
+	int handle;
+	uint8_t flags;
+} CeVirtualQueryExFullInput, * PCeVirtualQueryExFullInput;
+
+typedef struct {
+	uint64_t baseaddress;
+	uint64_t size;
+	uint32_t protection;
+	uint32_t type;
+} RegionInfo, * PRegionInfo;
 #pragma pack()
 
 class CEConnection {
@@ -122,6 +153,7 @@ public:
 
 	std::vector<PROCESS_DATA> m_cachedProcesses;
 	std::vector<MODULE_DATA> m_cachedModules;
+	std::vector<MEMORY_BASIC_INFORMATION> m_cachedPages;
 private:
 	SOCKET m_sock;
 };
