@@ -76,8 +76,9 @@ static int sendall(SOCKET s, void* buf, int size, int flags)
 	return totalsent;
 }
 
-int DispatchCommand(CEConnection& con, char command)
+CommandReturn DispatchCommand(CEConnection& con, char command)
 {
+	CommandReturn cret = CommandReturn::CR_FAIL_UNHANDLED;
 	enum ce_command cmd = (enum ce_command)command;
 
 	//std::wcout << "Command: " << ce_command_to_string(cmd) << std::endl;
@@ -88,12 +89,20 @@ int DispatchCommand(CEConnection& con, char command)
 		PCeVersion v;
 		int versionsize = (int)strlen(versionstring);
 		v = (PCeVersion)malloc(sizeof(CeVersion) + versionsize);
+		if (v == NULL) {
+			cret = CommandReturn::CR_FAIL_ALLOC;
+			break;
+		}
 		v->stringsize = versionsize;
 		v->version = 1;
 		memcpy((char*)v + sizeof(CeVersion), versionstring, versionsize);
-		sendall(con.getSocket(), v, sizeof(CeVersion) + versionsize, 0);
-		free(v);
-		return 0;
+		if (sendall(con.getSocket(), v, sizeof(CeVersion) + versionsize, 0) > 0) {
+			cret = CommandReturn::CR_OK;
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
+			free(v);
+		}
 	}
 
 	case CMD_CLOSECONNECTION:
@@ -108,8 +117,14 @@ int DispatchCommand(CEConnection& con, char command)
 		{
 			//std::wcout << "OpenProcess for PID " << (HANDLE)pid << std::endl;
 			if (sendall(con.getSocket(), &pid, sizeof(pid), 0) > 0) {
-				return 0;
+				cret = CommandReturn::CR_OK;
 			}
+			else {
+				cret = CommandReturn::CR_FAIL_NETWORK;
+			}
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -130,8 +145,14 @@ int DispatchCommand(CEConnection& con, char command)
 			}
 			if (sendall(con.getSocket(), &result, sizeof(result), 0) > 0)
 			{
-				return 0;
+				cret = CommandReturn::CR_OK;
 			}
+			else {
+				cret = CommandReturn::CR_FAIL_NETWORK;
+			}
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -139,7 +160,7 @@ int DispatchCommand(CEConnection& con, char command)
 	case CMD_PROCESS32FIRST:
 		con.m_cachedProcesses.clear();
 		if (KInterface::getInstance().MtProcesses(con.m_cachedProcesses) != true) {
-			return 1;
+			return CommandReturn::CR_FAIL_KMEM;
 		}
 	case CMD_PROCESS32NEXT: {
 		UINT32 toolhelpsnapshot;
@@ -152,7 +173,8 @@ int DispatchCommand(CEConnection& con, char command)
 				CeProcessEntry* pcpe = (CeProcessEntry*)malloc(sizeof(*pcpe) + imageNameLen);
 
 				if (pcpe == NULL) {
-					return 1;
+					cret = CommandReturn::CR_FAIL_ALLOC;
+					break;
 				}
 				con.m_cachedProcesses.erase(con.m_cachedProcesses.begin());
 				pcpe->pid = (int)((ULONG_PTR)pd.UniqueProcessId);
@@ -161,8 +183,10 @@ int DispatchCommand(CEConnection& con, char command)
 				memcpy(((BYTE*)pcpe) + sizeof(*pcpe), pd.ImageName, imageNameLen);
 				if (sendall(con.getSocket(), pcpe, sizeof(*pcpe) + imageNameLen, 0) > 0)
 				{
-					free(pcpe);
-					return 0;
+					cret = CommandReturn::CR_OK;
+				}
+				else {
+					cret = CommandReturn::CR_FAIL_NETWORK;
 				}
 				free(pcpe);
 			}
@@ -173,9 +197,15 @@ int DispatchCommand(CEConnection& con, char command)
 				cpe.result = 0;
 				if (sendall(con.getSocket(), &cpe, sizeof(cpe), 0) > 0)
 				{
-					return 0;
+					cret = CommandReturn::CR_OK;
+				}
+				else {
+					cret = CommandReturn::CR_FAIL_NETWORK;
 				}
 			}
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -186,8 +216,14 @@ int DispatchCommand(CEConnection& con, char command)
 		{
 			UINT32 r = 1;
 			if (sendall(con.getSocket(), &r, sizeof(r), 0) > 0) {
-				return 0;
+				cret = CommandReturn::CR_OK;
 			}
+			else {
+				cret = CommandReturn::CR_FAIL_NETWORK;
+			}
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -199,26 +235,37 @@ int DispatchCommand(CEConnection& con, char command)
 
 		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
 			if (params.compress != 0) {
-				return 1;
+				cret = CommandReturn::CR_FAIL_OTHER;
+				break;
 			}
 			out = (PCeReadProcessMemoryOutput)malloc(sizeof(*out) + params.size);
 			if (out == NULL) {
-				return 1;
+				cret = CommandReturn::CR_FAIL_ALLOC;
+				break;
 			}
 			if (KInterface::getInstance().MtRPM((HANDLE)((ULONG_PTR)params.handle), (PVOID)params.address, (BYTE*)out + sizeof(*out), params.size, &krr) != true) {
 				free(out);
-				return 1;
+				cret = CommandReturn::CR_FAIL_KMEM;
+				break;
 			}
 			if (params.size != krr.SizeReq || params.size != krr.SizeRes || krr.StatusRes != 0) {
 				free(out);
-				return 1;
+				cret = CommandReturn::CR_FAIL_OTHER;
+				break;
 			}
 			if (sendall(con.getSocket(), out, sizeof(*out) + params.size, 0) > 0)
 			{
 				free(out);
-				return 0;
+				cret = CommandReturn::CR_OK;
+				break;
 			}
-			free(out);
+			else {
+				free(out);
+				cret = CommandReturn::CR_FAIL_NETWORK;
+			}
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -263,8 +310,12 @@ int DispatchCommand(CEConnection& con, char command)
 		arch = 3;
 #endif
 		if (sendall(con.getSocket(), &arch, sizeof(arch), 0) > 0) {
-			return 0;
+			cret = CommandReturn::CR_OK;
 		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
+		}
+		break;
 	}
 
 	case CMD_MODULE32FIRST:
@@ -276,7 +327,8 @@ int DispatchCommand(CEConnection& con, char command)
 				con.m_cachedModules.clear();
 				//std::wcout << "Modules for PID 0x" << std::hex << toolhelpsnapshot << std::endl;
 				if (KInterface::getInstance().MtModules((HANDLE)((ULONG_PTR)toolhelpsnapshot), con.m_cachedModules) != true) {
-					return 1;
+					cret = CommandReturn::CR_FAIL_KMEM;
+					break;
 				}
 			}
 			else {
@@ -288,7 +340,8 @@ int DispatchCommand(CEConnection& con, char command)
 				CeModuleEntry* pcme = (CeModuleEntry*)malloc(sizeof(*pcme) + imageNameLen);
 
 				if (pcme == NULL) {
-					return 1;
+					cret = CommandReturn::CR_FAIL_ALLOC;
+					break;
 				}
 				con.m_cachedModules.erase(con.m_cachedModules.begin());
 				pcme->modulebase = (INT64)md.DllBase;
@@ -298,8 +351,10 @@ int DispatchCommand(CEConnection& con, char command)
 				memcpy(((BYTE*)pcme) + sizeof(*pcme), md.BaseDllName, imageNameLen);
 				if (sendall(con.getSocket(), pcme, sizeof(*pcme) + imageNameLen, 0) > 0)
 				{
-					free(pcme);
-					return 0;
+					cret = CommandReturn::CR_OK;
+				}
+				else {
+					cret = CommandReturn::CR_FAIL_NETWORK;
 				}
 				free(pcme);
 			}
@@ -311,7 +366,10 @@ int DispatchCommand(CEConnection& con, char command)
 				cme.result = 0;
 				if (sendall(con.getSocket(), &cme, sizeof(cme), 0) > 0)
 				{
-					return 0;
+					cret = CommandReturn::CR_OK;
+				}
+				else {
+					cret = CommandReturn::CR_FAIL_NETWORK;
 				}
 			}
 		}
@@ -328,9 +386,16 @@ int DispatchCommand(CEConnection& con, char command)
 			{
 				//std::wcout << "Symbolpath: " << symbolpath << std::endl;
 				UINT64 fail = 0;
-				if (sendall(con.getSocket(), &fail, sizeof(fail), 0) > 0) {
-					return 0;
+				if (sendall(con.getSocket(), &fail, sizeof(fail), 0) > 0)
+				{
+					cret = CommandReturn::CR_OK;
 				}
+				else {
+					cret = CommandReturn::CR_FAIL_NETWORK;
+				}
+			}
+			else {
+				cret = CommandReturn::CR_FAIL_NETWORK;
 			}
 		}
 		break;
@@ -354,19 +419,30 @@ int DispatchCommand(CEConnection& con, char command)
 		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
 			con.m_cachedPages.clear();
 			if (KInterface::getInstance().MtPages((HANDLE)((ULONG_PTR)params.handle), con.m_cachedPages) != true) {
-				return 1;
+				cret = CommandReturn::CR_FAIL_KMEM;
+				break;
 			}
 			UINT32 count = (UINT32)con.m_cachedPages.size();
-			sendall(con.getSocket(), &count, sizeof(count), 0);
+			if (sendall(con.getSocket(), &count, sizeof(count), 0) <= 0)
+			{
+				cret = CommandReturn::CR_FAIL_NETWORK;
+				break;
+			}
+			cret = CommandReturn::CR_OK;
 			for (auto& page : con.m_cachedPages) {
 				RegionInfo out;
 				out.baseaddress = (UINT64)page.BaseAddress;
 				out.protection = page.Protect;
 				out.size = page.RegionSize;
 				out.type = page.Type;
-				sendall(con.getSocket(), &out, sizeof(out), 0);
+				if (sendall(con.getSocket(), &out, sizeof(out), 0) <= 0)
+				{
+					cret = CommandReturn::CR_FAIL_NETWORK;
+				}
 			}
-			return 0;
+		}
+		else {
+			cret = CommandReturn::CR_FAIL_NETWORK;
 		}
 		break;
 	}
@@ -376,11 +452,11 @@ int DispatchCommand(CEConnection& con, char command)
 		CeVirtualQueryExInput params;
 		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
 			con.m_cachedPages.clear();
-			if (KInterface::getInstance().MtPages((HANDLE)((ULONG_PTR)params.handle), con.m_cachedPages, (PVOID)params.baseaddress) != true) {
-				return 1;
-			}
-			if (con.m_cachedPages.size() > 0) {
-				return 1;
+			if (KInterface::getInstance().MtPages((HANDLE)((ULONG_PTR)params.handle), con.m_cachedPages, (PVOID)params.baseaddress) != true ||
+				con.m_cachedPages.size() == 0)
+			{
+				cret = CommandReturn::CR_FAIL_KMEM;
+				break;
 			}
 			CeVirtualQueryExOutput out;
 			out.baseaddress = (UINT64)con.m_cachedPages[0].BaseAddress;
@@ -392,9 +468,15 @@ int DispatchCommand(CEConnection& con, char command)
 				if (cmd == CMD_GETREGIONINFO) {
 					uint8_t size = 0;
 					if (sendall(con.getSocket(), &size, sizeof(size), 0) > 0) {
-						return 0;
+						cret = CommandReturn::CR_OK;
+					}
+					else {
+						cret = CommandReturn::CR_FAIL_NETWORK;
 					}
 				}
+			}
+			else {
+				cret = CommandReturn::CR_FAIL_NETWORK;
 			}
 		}
 		break;
@@ -406,8 +488,7 @@ int DispatchCommand(CEConnection& con, char command)
 		break;
 	}
 
-	std::wcout << "Unhandled command: " << ce_command_to_string(cmd) << std::endl;
-	return 1;
+	return cret;
 }
 
 int CheckForAndDispatchCommand(CEConnection& con)
@@ -418,9 +499,31 @@ int CheckForAndDispatchCommand(CEConnection& con)
 	r = recv(con.getSocket(), &command, 1, 0);
 	if (r == 1)
 	{
-		return DispatchCommand(con, command);
+		enum ce_command cmd = (enum ce_command)command;
+
+		switch (DispatchCommand(con, cmd))
+		{
+		case CommandReturn::CR_FAIL_UNHANDLED:
+			std::wcout << "Unhandled command: " << ce_command_to_string(cmd) << std::endl;
+			return 1;
+		case CommandReturn::CR_FAIL_OTHER:
+			std::wcout << "Unknown error for command: " << ce_command_to_string(cmd) << std::endl;
+			return 1;
+		case CommandReturn::CR_FAIL_NETWORK:
+			std::wcout << "Network error for command: " << ce_command_to_string(cmd) << std::endl;
+			return 1;
+		case CommandReturn::CR_FAIL_KMEM:
+			std::wcout << "Internal KMemDriver API error for command: " << ce_command_to_string(cmd) << std::endl;
+			return 1;
+		case CommandReturn::CR_FAIL_ALLOC:
+			std::wcout << "Memory allocation failed for command: " << ce_command_to_string(cmd) << std::endl;
+			return 1;
+		case CommandReturn::CR_OK:
+			break;
+		}
 	}
 	else {
+		std::wcout << "Command recv returned: " << r << std::endl;
 		return 1;
 	}
 
