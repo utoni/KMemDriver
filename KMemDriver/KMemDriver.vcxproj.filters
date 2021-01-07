@@ -43,4 +43,12 @@
       <Filter>Source Files</Filter>
     </MASM>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\PastDSE-Manual-Map-Debug.bat">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="..\PastDSE-Manual-Map-Release.bat">
+      <Filter>Source Files</Filter>
+    </None>
+  </ItemGroup>
 </Project>
