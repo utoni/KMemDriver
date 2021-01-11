@@ -100,12 +100,18 @@ public:
 	UINT32 getLastPingValue();
 	UINT32 getLastNtStatus();
 
+	static bool PageIsFreed(MEMORY_BASIC_INFORMATION& page) {
+		return (page.Protect & PAGE_NOACCESS) != 0;
+	}
+	static bool PageIsPrivateReserved(MEMORY_BASIC_INFORMATION& page) {
+		return page.Protect == 0;
+	}
 	SendRecvReturn RecvWait(DWORD timeout = DEFAULT_TIMEOUT_MS);
-	void StartPingThread(void (__cdecl *onTimeout)(void));
+	void StartPingThread(void(__cdecl* onTimeout)(void));
 
 private:
 	SendRecvReturn SendRecvWait(UINT32 type, DWORD timeout = DEFAULT_TIMEOUT_MS);
-	void PingThread(void (__cdecl *onTimeout)(void));
+	void PingThread(void(__cdecl* onTimeout)(void));
 
 	PVOID m_shmem = NULL;
 	HANDLE m_kevent = NULL, m_uevent = NULL;

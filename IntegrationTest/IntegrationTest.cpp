@@ -2,14 +2,17 @@
 #include "KInterface.h"
 
 #include <iostream>
+#include <map>
 
-#define PRINT_CHECK_MSG(message) std::wcout << L ## message
+#define PRINT_CHECK_MSG(message) std::wcout << L ## message ## " "
 #define PRINT_FAIL_MSG() std::wcout << L" [FAIL]" << std::endl
 #define PRINT_OK_MSG() std::wcout << L" [ OK ]" << std::endl
 #define KM_ASSERT_EQUAL(equal, condition, message) \
 	do { PRINT_CHECK_MSG(message); if ((condition) != (equal)) { \
 		PRINT_FAIL_MSG(); goto error; } else { PRINT_OK_MSG(); } \
 	} while (0)
+#define KM_ASSERT_EQUAL_NO_MSG(equal, condition) \
+	do { if ((condition) != (equal)) { goto error; } } while (0)
 #define KM_TEST_SUITE(condition, message) \
 	do { \
 		PRINT_CHECK_MSG("--- TestSuite " ## message ## " ---\n"); \
@@ -167,6 +170,72 @@ error:
 	return false;
 }
 
+static std::map<HANDLE, bool> GetCurrentHeaps()
+{
+	std::map<HANDLE, bool> retval;
+	SIZE_T const max_heaps = 64;
+	HANDLE heaps[max_heaps];
+	DWORD count = GetProcessHeaps(max_heaps, heaps);
+
+	if (count > 0) {
+		for (SIZE_T j = 0; j < count; ++j) {
+			retval[heaps[j]] = true;
+		}
+	}
+	return retval;
+}
+
+static bool test_PagesRPM(KInterface& ki, HANDLE pid)
+{
+	{
+		std::vector<MEMORY_BASIC_INFORMATION> pages;
+		KM_ASSERT_EQUAL(true, ki.Pages(pid, pages), "Kernel Interface Pages");
+		KM_ASSERT_EQUAL(0, ki.getLastNtStatus(), "Last NtStatus");
+		for (auto& page : pages) {
+			std::map<HANDLE, bool> heaps = GetCurrentHeaps();
+			if (heaps.find(page.BaseAddress) != heaps.end()) {
+				continue;
+			}
+			if (KInterface::PageIsFreed(page) == true || KInterface::PageIsPrivateReserved(page) == true) {
+				continue;
+			}
+			BYTE buf[4096];
+			SIZE_T siz = (page.RegionSize > sizeof(buf) ? sizeof(buf) : page.RegionSize);
+			KM_ASSERT_EQUAL_NO_MSG(true, ki.RPM(pid, page.BaseAddress, buf, siz, NULL));
+			KM_ASSERT_EQUAL_NO_MSG(0, ki.getLastNtStatus());
+		}
+
+		std::vector<MEMORY_BASIC_INFORMATION> vq_pages;
+		MEMORY_BASIC_INFORMATION page;
+		SIZE_T base = NULL;
+		while (VirtualQuery((LPVOID)base, &page, sizeof(page)) > 0) {
+			std::map<HANDLE, bool> vq_heaps = GetCurrentHeaps();
+			base += page.RegionSize;
+			if (vq_heaps.find(page.BaseAddress) != vq_heaps.end()) {
+				continue;
+			}
+			vq_pages.push_back(page);
+		}
+
+		for (SIZE_T i = 0; i < vq_pages.size(); ++i) {
+			if (vq_pages[i].BaseAddress != pages[i].BaseAddress) {
+				/* not optimal as we do test all pages */
+				break;
+			}
+			KM_ASSERT_EQUAL_NO_MSG(vq_pages[i].Protect, pages[i].Protect);
+			KM_ASSERT_EQUAL_NO_MSG(vq_pages[i].RegionSize, pages[i].RegionSize);
+			KM_ASSERT_EQUAL_NO_MSG(vq_pages[i].State, pages[i].State);
+			KM_ASSERT_EQUAL_NO_MSG(vq_pages[i].Type, pages[i].Type);
+		}
+
+		KM_ASSERT_EQUAL_NO_MSG(pages.size(), pages.size());
+	}
+
+	return true;
+error:
+	return false;
+}
+
 int main()
 {
 	HANDLE this_pid = (HANDLE)((ULONG_PTR)GetCurrentProcessId());
@@ -188,6 +257,7 @@ int main()
 		KM_TEST_SUITE(test_Pages(ki, this_pid), "Pages");
 		KM_TEST_SUITE(test_VirtualMemory(ki, this_pid), "VirtualMemory");
 		KM_TEST_SUITE(test_MemoryReadWrite(ki, this_pid), "MemoryReadWrite");
+		KM_TEST_SUITE(test_PagesRPM(ki, this_pid), "ModulesPagesRPM");
 		KM_ASSERT_EQUAL(true, ki.Ping(), "Kernel Interface PING - PONG #4");
 		KM_ASSERT_EQUAL(true, ki.Exit(), "Kernel Interface Driver Shutdown");
 	}
@@ -199,5 +269,5 @@ int main()
 error:
 	ki.Exit();
 	std::wcout << std::endl << "KMemDriver Shutdown [PRESS RETURN KEY TO EXIT]" << std::endl;
-	getchar();
+	std::getchar();
 }

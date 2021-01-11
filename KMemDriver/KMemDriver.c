@@ -179,6 +179,7 @@ NTSTATUS GetProcesses(OUT PROCESS_DATA* procs, IN OUT SIZE_T* psiz)
 		return status;
 	}
 
+	mem_needed += 16 * sizeof(SYSTEM_PROCESS_INFORMATION);
 	if (mem_needed / sizeof(SYSTEM_PROCESS_INFORMATION) > max_siz / sizeof(PROCESS_DATA)) {
 		KDBG("NtQuerySystemInformation buffer too small\n", status);
 		return STATUS_BUFFER_TOO_SMALL;
@@ -554,11 +555,11 @@ NTSTATUS KRThread(IN PVOID pArg)
 						}
 						ULONG new_prot = PAGE_EXECUTE_READWRITE, old_prot = 0;
 						KeProtectVirtualMemory(lastPROC, rr->Address, rr->SizeReq, new_prot, &old_prot);
-						KDBG("RPM to 0x%p size 0x%X bytes (protection before/after: 0x%X/0x%X)\n",
-							rr->Address, rr->SizeReq, old_prot, new_prot);
 						rr->StatusRes = KeReadVirtualMemory(lastPEP, (PVOID)rr->Address,
 							(PVOID)((ULONG_PTR)shm_buf + sizeof * rr), &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, rr->Address, rr->SizeReq, old_prot);
+						KDBG("RPM to 0x%p size 0x%X bytes returned 0x%X (protection before/after: 0x%X/0x%X)\n",
+							rr->Address, rr->SizeReq, rr->StatusRes, old_prot, new_prot);
 
 						if (NT_SUCCESS(rr->StatusRes)) {
 							rr->SizeRes = siz;
@@ -589,11 +590,11 @@ NTSTATUS KRThread(IN PVOID pArg)
 						}
 						ULONG new_prot = PAGE_EXECUTE_READWRITE, old_prot = 0;
 						KeProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, new_prot, &old_prot);
-						KDBG("WPM to 0x%p size 0x%X bytes (protection before/after: 0x%X/0x%X)\n",
-							wr->Address, wr->SizeReq, old_prot, new_prot);
 						wr->StatusRes = KeWriteVirtualMemory(lastPEP, (PVOID)((ULONG_PTR)shm_buf + sizeof * wr),
 							(PVOID)wr->Address, &siz);
 						KeRestoreProtectVirtualMemory(lastPROC, wr->Address, wr->SizeReq, old_prot);
+						KDBG("WPM to 0x%p size 0x%X bytes returned 0x%X (protection before/after: 0x%X/0x%X)\n",
+							wr->Address, wr->SizeReq, wr->StatusRes, old_prot, new_prot);
 
 						if (NT_SUCCESS(wr->StatusRes)) {
 							wr->SizeRes = siz;
