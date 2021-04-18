@@ -243,15 +243,23 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 				cret = CommandReturn::CR_FAIL_ALLOC;
 				break;
 			}
-			if (KInterface::getInstance().MtRPM((HANDLE)((ULONG_PTR)params.handle), (PVOID)params.address, (BYTE*)out + sizeof(*out), params.size, &krr) != true) {
-				free(out);
-				cret = CommandReturn::CR_FAIL_KMEM;
-				break;
+
+			if (params.address == NULL) {
+				std::wcout << "Got a RPM to NULL, ignore." << std::endl;
+				out->read = 0;
 			}
-			if (params.size != krr.SizeReq || params.size != krr.SizeRes || krr.StatusRes != 0) {
-				free(out);
-				cret = CommandReturn::CR_FAIL_OTHER;
-				break;
+			else {
+				if (KInterface::getInstance().MtRPM((HANDLE)((ULONG_PTR)params.handle), (PVOID)params.address, (BYTE*)&out[1], params.size, &krr) != true) {
+					free(out);
+					cret = CommandReturn::CR_FAIL_KMEM;
+					break;
+				}
+				if (params.size != krr.SizeReq || params.size != krr.SizeRes || krr.StatusRes != 0) {
+					free(out);
+					cret = CommandReturn::CR_FAIL_OTHER;
+					break;
+				}
+				out->read = (int)krr.SizeRes;
 			}
 			if (sendall(con.getSocket(), out, sizeof(*out) + params.size, 0) > 0)
 			{
@@ -334,6 +342,7 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 			else {
 				//std::wcout << "Modules NEXT for PID 0x" << std::hex << toolhelpsnapshot << std::endl;
 			}
+
 			if (con.m_cachedModules.size() > 0) {
 				MODULE_DATA md = con.m_cachedModules[0];
 				int imageNameLen = (int)strnlen(md.BaseDllName, sizeof(md.BaseDllName));
@@ -348,6 +357,7 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 				pcme->modulesize = md.SizeOfImage;
 				pcme->modulenamesize = imageNameLen;
 				pcme->result = 1;
+
 				memcpy(((BYTE*)pcme) + sizeof(*pcme), md.BaseDllName, imageNameLen);
 				if (sendall(con.getSocket(), pcme, sizeof(*pcme) + imageNameLen, 0) > 0)
 				{
@@ -430,6 +440,10 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 			}
 			cret = CommandReturn::CR_OK;
 			for (auto& page : con.m_cachedPages) {
+				if (KInterface::PageIsFreed(page) == true || KInterface::PageIsPrivateReserved(page) == true)
+				{
+					continue;
+				}
 				RegionInfo out;
 				out.baseaddress = (UINT64)page.BaseAddress;
 				out.protection = page.Protect;
@@ -447,8 +461,10 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 		break;
 	}
 
-	case CMD_VIRTUALQUERYEX:
-	case CMD_GETREGIONINFO: {
+	case CMD_GETREGIONINFO:
+		break;
+
+	case CMD_VIRTUALQUERYEX: {
 		CeVirtualQueryExInput params;
 		if (recvall(con.getSocket(), &params, sizeof(params), MSG_WAITALL) > 0) {
 			con.m_cachedPages.clear();
@@ -458,22 +474,27 @@ CommandReturn DispatchCommand(CEConnection& con, char command)
 				cret = CommandReturn::CR_FAIL_KMEM;
 				break;
 			}
-			CeVirtualQueryExOutput out;
-			out.baseaddress = (UINT64)con.m_cachedPages[0].BaseAddress;
-			out.protection = con.m_cachedPages[0].Protect;
-			out.size = con.m_cachedPages[0].RegionSize;
-			out.type = con.m_cachedPages[0].Type;
-			out.result = 1;
-			if (sendall(con.getSocket(), &out, sizeof(out), 0) > 0) {
-				if (cmd == CMD_GETREGIONINFO) {
-					uint8_t size = 0;
-					if (sendall(con.getSocket(), &size, sizeof(size), 0) > 0) {
-						cret = CommandReturn::CR_OK;
-					}
-					else {
-						cret = CommandReturn::CR_FAIL_NETWORK;
-					}
+			SIZE_T i = 0;
+			for (auto& page : con.m_cachedPages) {
+				if (KInterface::PageIsFreed(page) == false && KInterface::PageIsPrivateReserved(page) == false)
+				{
+					break;
 				}
+				i++;
+			}
+			if (i == con.m_cachedPages.size()) {
+				cret = CommandReturn::CR_FAIL_KMEM;
+				break;
+			}
+			std::wcout << "---" << con.m_cachedPages[i].BaseAddress << std::endl;
+			CeVirtualQueryExOutput out;
+			out.baseaddress = (UINT64)con.m_cachedPages[i].BaseAddress;
+			out.protection = con.m_cachedPages[i].Protect;
+			out.size = con.m_cachedPages[i].RegionSize;
+			out.type = con.m_cachedPages[i].Type;
+			out.result = sizeof(MEMORY_BASIC_INFORMATION);
+			if (sendall(con.getSocket(), &out, sizeof(out), 0) > 0) {
+				cret = CommandReturn::CR_OK;
 			}
 			else {
 				cret = CommandReturn::CR_FAIL_NETWORK;

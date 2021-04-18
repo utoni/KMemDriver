@@ -16,7 +16,7 @@ typedef struct _PEB_LDR_DATA
 	LIST_ENTRY InLoadOrderModuleList;
 	LIST_ENTRY InMemoryOrderModuleList;
 	LIST_ENTRY InInitializationOrderModuleList;
-} PEB_LDR_DATA, *PPEB_LDR_DATA;
+} PEB_LDR_DATA, * PPEB_LDR_DATA;
 
 typedef struct _LDR_DATA_TABLE_ENTRY
 {
@@ -33,7 +33,7 @@ typedef struct _LDR_DATA_TABLE_ENTRY
 	USHORT TlsIndex;
 	LIST_ENTRY HashLinks;
 	ULONG TimeDateStamp;
-} LDR_DATA_TABLE_ENTRY, *PLDR_DATA_TABLE_ENTRY;
+} LDR_DATA_TABLE_ENTRY, * PLDR_DATA_TABLE_ENTRY;
 
 typedef struct _PEB
 {
@@ -55,7 +55,7 @@ typedef struct _PEB
 	ULONG SystemReserved;
 	ULONG AtlThunkSListPtr32;
 	PVOID ApiSetMap;
-} PEB, *PPEB;
+} PEB, * PPEB;
 
 typedef struct _PEB_LDR_DATA32
 {
@@ -65,7 +65,7 @@ typedef struct _PEB_LDR_DATA32
 	LIST_ENTRY32 InLoadOrderModuleList;
 	LIST_ENTRY32 InMemoryOrderModuleList;
 	LIST_ENTRY32 InInitializationOrderModuleList;
-} PEB_LDR_DATA32, *PPEB_LDR_DATA32;
+} PEB_LDR_DATA32, * PPEB_LDR_DATA32;
 
 typedef struct _LDR_DATA_TABLE_ENTRY32
 {
@@ -82,7 +82,7 @@ typedef struct _LDR_DATA_TABLE_ENTRY32
 	USHORT TlsIndex;
 	LIST_ENTRY32 HashLinks;
 	ULONG TimeDateStamp;
-} LDR_DATA_TABLE_ENTRY32, *PLDR_DATA_TABLE_ENTRY32;
+} LDR_DATA_TABLE_ENTRY32, * PLDR_DATA_TABLE_ENTRY32;
 
 typedef struct _PEB32
 {
@@ -104,7 +104,7 @@ typedef struct _PEB32
 	ULONG SystemReserved;
 	ULONG AtlThunkSListPtr32;
 	ULONG ApiSetMap;
-} PEB32, *PPEB32;
+} PEB32, * PPEB32;
 
 typedef struct _MEMORY_BASIC_INFORMATION {
 	PVOID  BaseAddress;
@@ -114,7 +114,7 @@ typedef struct _MEMORY_BASIC_INFORMATION {
 	ULONG  State;
 	ULONG  Protect;
 	ULONG  Type;
-} MEMORY_BASIC_INFORMATION, *PMEMORY_BASIC_INFORMATION;
+} MEMORY_BASIC_INFORMATION, * PMEMORY_BASIC_INFORMATION;
 
 typedef struct _KLDR_DATA_TABLE_ENTRY {
 	LIST_ENTRY InLoadOrderLinks;
@@ -134,15 +134,15 @@ typedef struct _KLDR_DATA_TABLE_ENTRY {
 	ULONG CheckSum;
 	PVOID LoadedImports;
 	PVOID PatchInformation;
-} KLDR_DATA_TABLE_ENTRY, *PKLDR_DATA_TABLE_ENTRY;
+} KLDR_DATA_TABLE_ENTRY, * PKLDR_DATA_TABLE_ENTRY;
 
 #pragma warning(disable : 4214 4201)
 #pragma pack(push, 1)
 
 typedef struct _MM_AVL_NODE // Size=24
 {
-	struct _MM_AVL_NODE * LeftChild; // Size=8 Offset=0
-	struct _MM_AVL_NODE * RightChild; // Size=8 Offset=8
+	struct _MM_AVL_NODE* LeftChild; // Size=8 Offset=0
+	struct _MM_AVL_NODE* RightChild; // Size=8 Offset=8
 
 	union // Size=8
 	{
@@ -154,9 +154,9 @@ typedef struct _MM_AVL_NODE // Size=24
 		{
 			__int64  Balance : 2; // Size=8 Offset=0 BitOffset=0 BitCount=2
 		};
-		struct _MM_AVL_NODE * Parent; // Size=8 Offset=0
+		struct _MM_AVL_NODE* Parent; // Size=8 Offset=0
 	};
-} MM_AVL_NODE, *PMM_AVL_NODE, *PMMADDRESS_NODE;
+} MM_AVL_NODE, * PMM_AVL_NODE, * PMMADDRESS_NODE;
 
 union _EX_PUSH_LOCK // Size=8
 {
@@ -169,7 +169,7 @@ union _EX_PUSH_LOCK // Size=8
 		unsigned __int64 Shared : 60; // Size=8 Offset=0 BitOffset=4 BitCount=60
 	};
 	unsigned __int64 Value; // Size=8 Offset=0
-	void * Ptr; // Size=8 Offset=0
+	void* Ptr; // Size=8 Offset=0
 };
 
 struct _MMVAD_FLAGS // Size=4
@@ -209,7 +209,7 @@ typedef struct _MMVAD_SHORT // Size=64
 	union
 	{
 		struct _RTL_BALANCED_NODE VadNode; // Size=24 Offset=0
-		struct _MMVAD_SHORT * NextVad; // Size=8 Offset=0
+		struct _MMVAD_SHORT* NextVad; // Size=8 Offset=0
 	};
 	unsigned long StartingVpn; // Size=4 Offset=24
 	unsigned long EndingVpn; // Size=4 Offset=28
@@ -221,8 +221,8 @@ typedef struct _MMVAD_SHORT // Size=64
 	union _EX_PUSH_LOCK PushLock; // Size=8 Offset=40
 	union MMVAD_SHORT_u1 u; // Size=4 Offset=48
 	union MMVAD_SHORT_u2 u1; // Size=4 Offset=52
-	struct _MI_VAD_EVENT_BLOCK * EventList; // Size=8 Offset=56
-} MMVAD_SHORT, *PMMVAD_SHORT;
+	struct _MI_VAD_EVENT_BLOCK* EventList; // Size=8 Offset=56
+} MMVAD_SHORT, * PMMVAD_SHORT;
 
 struct _MMVAD_FLAGS2 // Size=4
 {
@@ -250,22 +250,22 @@ union ___unnamed2047 // Size=4
 union ___unnamed2048 // Size=8
 {
 	struct _MI_VAD_SEQUENTIAL_INFO SequentialVa; // Size=8 Offset=0
-	struct _MMEXTEND_INFO * ExtendedInfo; // Size=8 Offset=0
+	struct _MMEXTEND_INFO* ExtendedInfo; // Size=8 Offset=0
 };
 
 typedef union _EX_FAST_REF // Size=8
 {
-	void * Object;
+	void* Object;
 	struct
 	{
 		unsigned __int64 RefCnt : 4;
 	};
 	unsigned __int64 Value;
-} EX_FAST_REF, *PEX_FAST_REF;
+} EX_FAST_REF, * PEX_FAST_REF;
 
 typedef struct _CONTROL_AREA // Size=120
 {
-	struct _SEGMENT * Segment;
+	struct _SEGMENT* Segment;
 	struct _LIST_ENTRY ListHead;
 	unsigned __int64 NumberOfSectionReferences;
 	unsigned __int64 NumberOfPfnReferences;
@@ -275,27 +275,27 @@ typedef struct _CONTROL_AREA // Size=120
 	unsigned long f2;
 	EX_FAST_REF FilePointer;
 	// Other fields
-} CONTROL_AREA, *PCONTROL_AREA;
+} CONTROL_AREA, * PCONTROL_AREA;
 
 typedef struct _SUBSECTION // Size=56
 {
 	PCONTROL_AREA ControlArea;
 	// Other fields
-} SUBSECTION, *PSUBSECTION;
+} SUBSECTION, * PSUBSECTION;
 
 typedef struct _MMVAD // Size=128
 {
 	struct _MMVAD_SHORT Core; // Size=64 Offset=0
 	union ___unnamed2047 u2; // Size=4 Offset=64
 	unsigned long pad0;  // Size=4 Offset=68
-	struct _SUBSECTION * Subsection; // Size=8 Offset=72
-	struct _MMPTE * FirstPrototypePte; // Size=8 Offset=80
-	struct _MMPTE * LastContiguousPte; // Size=8 Offset=88
+	struct _SUBSECTION* Subsection; // Size=8 Offset=72
+	struct _MMPTE* FirstPrototypePte; // Size=8 Offset=80
+	struct _MMPTE* LastContiguousPte; // Size=8 Offset=88
 	struct _LIST_ENTRY ViewLinks; // Size=16 Offset=96
-	struct _EPROCESS * VadsProcess; // Size=8 Offset=112
+	struct _EPROCESS* VadsProcess; // Size=8 Offset=112
 	union ___unnamed2048 u4; // Size=8 Offset=120
-	struct _FILE_OBJECT * FileObject; // Size=8 Offset=128
-} MMVAD, *PMMVAD;
+	struct _FILE_OBJECT* FileObject; // Size=8 Offset=128
+} MMVAD, * PMMVAD;
 
 typedef enum _MI_VAD_TYPE
 {
@@ -307,19 +307,19 @@ typedef enum _MI_VAD_TYPE
 	VadLargePages,
 	VadRotatePhysical,
 	VadLargePageSection
-} MI_VAD_TYPE, *PMI_VAD_TYPE;
+} MI_VAD_TYPE, * PMI_VAD_TYPE;
 
 typedef struct _RTL_AVL_TREE // Size=8
 {
 	PMM_AVL_NODE BalancedRoot;
-	void * NodeHint;
+	void* NodeHint;
 	UINT64 NumberGenericTableElements;
-} RTL_AVL_TREE, *PRTL_AVL_TREE, MM_AVL_TABLE, *PMM_AVL_TABLE;
+} RTL_AVL_TREE, * PRTL_AVL_TREE, MM_AVL_TABLE, * PMM_AVL_TABLE;
 
 typedef struct _HANDLE_TABLE_ENTRY_INFO {
 	UINT32 AuditMask;
 	UINT32 MaxRelativeAccessMask;
-} HANDLE_TABLE_ENTRY_INFO, *PHANDLE_TABLE_ENTRY_INFO;
+} HANDLE_TABLE_ENTRY_INFO, * PHANDLE_TABLE_ENTRY_INFO;
 
 typedef struct _HANDLE_TABLE_ENTRY
 {
@@ -340,7 +340,7 @@ typedef struct _HANDLE_TABLE_ENTRY
 		};
 		LONG NextFreeTableEntry;
 	};
-} HANDLE_TABLE_ENTRY, *PHANDLE_TABLE_ENTRY;
+} HANDLE_TABLE_ENTRY, * PHANDLE_TABLE_ENTRY;
 
 typedef struct _HANDLE_TABLE_FREE_LIST
 {
@@ -349,7 +349,7 @@ typedef struct _HANDLE_TABLE_FREE_LIST
 	PHANDLE_TABLE_ENTRY LastFreeHandleEntry;
 	UINT32 HandleCount;
 	UINT32 HighWaterMark;
-} HANDLE_TABLE_FREE_LIST, *PHANDLE_TABLE_FREE_LIST;
+} HANDLE_TABLE_FREE_LIST, * PHANDLE_TABLE_FREE_LIST;
 
 typedef struct _HANDLE_TABLE
 {

@@ -25,7 +25,15 @@ NTSTATUS
 NTAPI
 PsLookupProcessByProcessId(
 	_In_ HANDLE ProcessId,
-	_Outptr_ PEPROCESS *Process
+	_Outptr_ PEPROCESS* Process
+);
+
+NTKERNELAPI
+NTSTATUS
+NTAPI
+PsLookupThreadByThreadId(
+	HANDLE   ThreadId,
+	PETHREAD* Thread
 );
 
 typedef struct _KAPC_STATE
@@ -35,7 +43,7 @@ typedef struct _KAPC_STATE
 	UCHAR KernelApcInProgress;
 	UCHAR KernelApcPending;
 	UCHAR UserApcPending;
-} KAPC_STATE, *PKAPC_STATE, *PRKAPC_STATE;
+} KAPC_STATE, * PKAPC_STATE, * PRKAPC_STATE;
 
 NTKERNELAPI
 VOID
@@ -113,7 +121,7 @@ ObReferenceObjectByName(
 
 NTSTATUS ZwAllocateVirtualMemory(
 	_In_    HANDLE    ProcessHandle,
-	_Inout_ PVOID     *BaseAddress,
+	_Inout_ PVOID* BaseAddress,
 	_In_    ULONG_PTR ZeroBits,
 	_Inout_ PSIZE_T   RegionSize,
 	_In_    ULONG     AllocationType,
@@ -122,7 +130,7 @@ NTSTATUS ZwAllocateVirtualMemory(
 
 NTSTATUS ZwFreeVirtualMemory(
 	_In_    HANDLE  ProcessHandle,
-	_Inout_ PVOID   *BaseAddress,
+	_Inout_ PVOID* BaseAddress,
 	_Inout_ PSIZE_T RegionSize,
 	_In_    ULONG   FreeType
 );

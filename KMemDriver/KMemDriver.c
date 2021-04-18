@@ -233,16 +233,17 @@ NTSTATUS WaitForControlProcess(OUT PEPROCESS* ppEProcess)
 	imageBase = NULL;
 	ctrlPID = NULL;
 
-	SYSTEM_PROCESS_INFORMATION* procs = MmAllocateNonCachedMemory((1024 + 128) * sizeof(*procs));
+	ULONG const max_procs = 1024 + 256;
+	SYSTEM_PROCESS_INFORMATION* procs = MmAllocateNonCachedMemory(max_procs * sizeof(*procs));
 	ULONG mem_needed = 0;
 
 	if (procs == NULL) {
 		return STATUS_MEMORY_NOT_ALLOCATED;
 	}
 	while (ctrlPID == NULL) {
-		status = ZwQuerySystemInformation(SystemProcessInformation, (PVOID)&procs[0], (1024 + 128) * sizeof(*procs), &mem_needed);
+		status = ZwQuerySystemInformation(SystemProcessInformation, (PVOID)&procs[0], max_procs * sizeof(*procs), &mem_needed);
 		if (!NT_SUCCESS(status)) {
-			KDBG("ZwQuerySystemInformation(%zu,%lu) failed with 0x%X\n", 1024 * sizeof(*procs), mem_needed, status);
+			KDBG("ZwQuerySystemInformation(%zu,%lu) failed with 0x%X\n", max_procs * sizeof(*procs), mem_needed, status);
 			return status;
 		}
 
