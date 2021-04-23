@@ -30,12 +30,6 @@
     <ClInclude Include="..\include\DLLHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\PatternScanner.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\include\DX11Manager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -48,12 +42,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DLLHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PatternScanner.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DX11Manager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

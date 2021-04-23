@@ -43,7 +43,6 @@ public:
 		PKERNEL_WRITE_REQUEST result);
 	bool VAlloc(HANDLE targetPID, PVOID* address, SIZE_T* size, ULONG protection);
 	bool VFree(HANDLE targetPID, PVOID address, SIZE_T size);
-	bool VUnlink(HANDLE targetPID, PVOID address);
 
 	bool MtInit() {
 		std::unique_lock<std::mutex> lck(m_jobLock);
@@ -88,10 +87,6 @@ public:
 	bool MtVFree(HANDLE targetPID, PVOID address, SIZE_T size) {
 		std::unique_lock<std::mutex> lck(m_jobLock);
 		return VFree(targetPID, address, size);
-	}
-	bool MtVUnlink(HANDLE targetPID, PVOID address) {
-		std::unique_lock<std::mutex> lck(m_jobLock);
-		return VUnlink(targetPID, address);
 	}
 
 	PVOID getBuffer();

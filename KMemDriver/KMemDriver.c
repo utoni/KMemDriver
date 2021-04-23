@@ -1,7 +1,6 @@
 #include "KMemDriver.h"
 #include "Imports.h"
 #include "Native.h"
-#include "Crypto.h"
 
 #include <ntddk.h>
 #include <Ntstrsafe.h>
@@ -79,29 +78,6 @@ NTSTATUS GetDriverObject(
 	IN WCHAR* DriverDirName
 );
 NTSTATUS KRThread(IN PVOID pArg);
-TABLE_SEARCH_RESULT VADFindNodeOrParent(
-	IN PMM_AVL_TABLE Table,
-	IN ULONG_PTR StartingVpn,
-	OUT PMMADDRESS_NODE* NodeOrParent
-);
-NTSTATUS VADFind(
-	IN PEPROCESS pProcess,
-	IN ULONG_PTR address,
-	OUT PMMVAD_SHORT* pResult
-);
-NTSTATUS VADProtect(
-	IN PEPROCESS pProcess,
-	IN ULONG_PTR address,
-	IN ULONG prot
-);
-NTSTATUS VADUnlink(
-	IN PEPROCESS pProcess,
-	IN ULONG_PTR address
-);
-PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
-	PVOID pHandleTable,
-	HANDLE handle
-);
 
 #pragma alloc_text(PAGE, WaitForControlProcess)
 #pragma alloc_text(PAGE, VerifyControlProcess)
@@ -119,11 +95,6 @@ PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(
 #pragma alloc_text(PAGE, FreeMemoryFromProcess)
 #pragma alloc_text(PAGE, GetDriverObject)
 #pragma alloc_text(PAGE, KRThread)
-#pragma alloc_text(PAGE, VADFindNodeOrParent)
-#pragma alloc_text(PAGE, VADFind)
-#pragma alloc_text(PAGE, VADProtect)
-#pragma alloc_text(PAGE, VADUnlink)
-#pragma alloc_text(PAGE, ExpLookupHandleTableEntry)
 
 static void fn_zero_text(PVOID fn_start);
 static HANDLE ctrlPID;
@@ -140,8 +111,6 @@ NTSTATUS DriverEntry(
 	_In_  PUNICODE_STRING RegistryPath
 )
 {
-	CryptoInit(CRYPTO_FNPTR(DriverEntry), NULL);
-	CRYPT_PROLOGUE();
 	NTSTATUS status;
 	HANDLE hThread = NULL;
 	CLIENT_ID clientID = { 0 };
@@ -163,7 +132,6 @@ NTSTATUS DriverEntry(
 	{
 		KDBG("Failed to create worker thread. Status: 0x%X\n", status);
 	}
-	CRYPT_EPILOGUE();
 
 	return status;
 }
@@ -647,22 +615,6 @@ NTSTATUS KRThread(IN PVOID pArg)
 						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
 						break;
 					}
-					case MEM_VUNLINK: {
-						PKERNEL_VUNLINK_REQUEST vr = (PKERNEL_VUNLINK_REQUEST)shm_buf;
-						KDBG("Got a VUNLINK to process 0x%X, address 0x%p\n",
-							vr->ProcessId, vr->Address);
-						if (!NT_SUCCESS(UpdatePPEPIfRequired(vr->ProcessId,
-							lastPID, &lastPROC, &lastPEP)))
-						{
-							running = 0;
-							break;
-						}
-						vr->StatusRes = VADUnlink(lastPEP, (ULONG_PTR)vr->Address);
-
-						siz = sizeof * vr;
-						KeWriteVirtualMemory(ctrlPEP, vr, (PVOID)SHMEM_ADDR, &siz);
-						break;
-					}
 					case MEM_EXIT:
 						KDBG("Gracefully exiting ..\n");
 						KeClearEvent(pk_kevent);
@@ -785,29 +737,4 @@ NTSTATUS GetDriverObject(
 	}
 
 	return status;
-}
-
-PHANDLE_TABLE_ENTRY ExpLookupHandleTableEntry(PVOID pHandleTable, HANDLE handle)
-{
-	unsigned __int64 v2; // rdx
-	__int64 v3; // r8
-	signed __int64 v4; // rax
-	__int64 v5; // rax
-
-	v2 = (__int64)handle & 0xFFFFFFFFFFFFFFFCui64;
-	if (v2 >= *(DWORD*)pHandleTable)
-		return 0i64;
-	v3 = *((uintptr_t*)pHandleTable + 1);
-	v4 = *((uintptr_t*)pHandleTable + 1) & 3i64;
-	if ((UINT32)v4 == 1)
-	{
-		v5 = *(uintptr_t*)(v3 + 8 * (v2 >> 10) - 1);
-		return (PHANDLE_TABLE_ENTRY)(v5 + 4 * (v2 & 0x3FF));
-	}
-	if ((UINT32)v4)
-	{
-		v5 = *(uintptr_t*)(*(uintptr_t*)(v3 + 8 * (v2 >> 19) - 2) + 8 * ((v2 >> 10) & 0x1FF));
-		return (PHANDLE_TABLE_ENTRY)(v5 + 4 * (v2 & 0x3FF));
-	}
-	return (PHANDLE_TABLE_ENTRY)(v3 + 4 * v2);
 }

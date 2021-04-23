@@ -290,28 +290,6 @@ bool KInterface::VFree(HANDLE targetPID, PVOID address, SIZE_T size)
 	return false;
 }
 
-bool KInterface::VUnlink(HANDLE targetPID, PVOID address)
-{
-	PKERNEL_VUNLINK_REQUEST vr = (PKERNEL_VUNLINK_REQUEST)getBuffer();
-	m_last_ntstatus = INVALID_NTSTATUS;
-	vr->ProcessId = targetPID;
-	vr->Address = address;
-	vr->StatusRes = (NTSTATUS)-1;
-	if (SendRecvWait(MEM_VUNLINK) == SRR_SIGNALED) {
-		m_last_ntstatus = vr->StatusRes;
-		if (vr->StatusRes)
-		{
-			std::stringstream err_str;
-			err_str << "Call VUnlink(0x" << std::hex << address
-				<< ") failed with 0x"
-				<< std::hex << vr->StatusRes;
-			throw std::runtime_error(err_str.str());
-		}
-		return true;
-	}
-	return false;
-}
-
 PVOID KInterface::getBuffer() {
 	if (!m_shmem)
 		throw std::runtime_error("Call Init() before..");

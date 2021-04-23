@@ -30,8 +30,7 @@ typedef _Return_type_success_(return >= 0) LONG NTSTATUS;
 #define MEM_WPM					0x806
 #define MEM_VALLOC				0x807
 #define MEM_VFREE				0x808
-#define MEM_VUNLINK				0x809
-#define MEM_EXIT				0x810
+#define MEM_EXIT				0x809
 
 typedef struct _KERNEL_HEADER
 {
@@ -133,15 +132,6 @@ typedef struct _KERNEL_VFREE_REQUEST
 	NTSTATUS StatusRes;
 } KERNEL_VFREE_REQUEST, * PKERNEL_VFREE_REQUEST;
 
-typedef struct _KERNEL_VUNLINK_REQUEST
-{
-	KERNEL_HEADER hdr;
-	HANDLE ProcessId;
-	PVOID Address;
-
-	NTSTATUS StatusRes;
-} KERNEL_VUNLINK_REQUEST, * PKERNEL_VUNLINK_REQUEST;
-
 typedef struct _PROCESS_DATA
 {
 	ULONG NumberOfThreads;
@@ -194,7 +184,6 @@ validateRequest
 	case MEM_WPM:
 	case MEM_VALLOC:
 	case MEM_VFREE:
-	case MEM_VUNLINK:
 	case MEM_EXIT:
 		return hdr->type;
 	default:

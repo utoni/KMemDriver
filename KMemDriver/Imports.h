@@ -140,14 +140,6 @@ PVOID
 NTAPI
 PsGetProcessWow64Process(IN PEPROCESS Process);
 
-NTSYSAPI
-PVOID
-NTAPI
-RtlAvlRemoveNode(
-	IN PRTL_AVL_TREE pTree,
-	IN PMMADDRESS_NODE pNode
-);
-
 __kernel_entry
 NTSTATUS
 ZwQuerySystemInformation(
